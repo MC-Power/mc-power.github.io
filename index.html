@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCTIERS - Minecraft Power Leaderboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --accent: #f59e0b;
+            --accent-hover: #d97706;
+            --success: #10b981;
+            --danger: #ef4444;
+            --border: #475569;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 2px solid var(--border);
+            padding: 1rem 2rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Filter Tabs */
+        .filter-container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+            overflow-x: auto;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        .filter-tab {
+            padding: 0.75rem 1.5rem;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .filter-tab:hover, .filter-tab.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        .filter-tab i {
+            margin-right: 0.5rem;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Leaderboard */
+        .leaderboard {
+            background: var(--bg-secondary);
+            border-radius: 1rem;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .leaderboard-header {
+            background: var(--bg-card);
+            padding: 1rem 2rem;
+            display: grid;
+            grid-template-columns: 80px 2fr 1fr 1.5fr;
+            gap: 1rem;
+            font-weight: bold;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border);
+        }
+
+        .player-row {
+            display: grid;
+            grid-template-columns: 80px 2fr 1fr 1.5fr;
+            gap: 1rem;
+            padding: 1.5rem 2rem;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            transition: all 0.3s;
+        }
+
+        .player-row:hover {
+            background: var(--bg-card);
+            transform: translateX(5px);
+        }
+
+        .rank {
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            border-radius: 0.5rem;
+        }
+
+        .rank-1 { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; }
+        .rank-2 { background: linear-gradient(135deg, #94a3b8, #64748b); color: #000; }
+        .rank-3 { background: linear-gradient(135deg, #b45309, #92400e); color: #fff; }
+        .rank-other { background: var(--bg-card); color: var(--text-secondary); }
+
+        .player-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .player-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 0.5rem;
+            background: var(--bg-card);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .player-details h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .player-rank-title {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .region {
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            font-weight: bold;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+
+        .region-na { background: #ef4444; color: white; }
+        .region-eu { background: #10b981; color: white; }
+        .region-as { background: #8b5cf6; color: white; }
+
+        .tiers {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tier-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+            border: 2px solid;
+        }
+
+        /* Tier Colors */
+        .tier-hp1 { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
+        .tier-lp1 { background: #fee2e2; color: #991b1b; border-color: #ef4444; }
+        .tier-hp2 { background: #d1fae5; color: #065f46; border-color: #10b981; }
+        .tier-lp2 { background: #dbeafe; color: #1e40af; border-color: #3b82f6; }
+        .tier-hp3 { background: #e0e7ff; color: #3730a3; border-color: #6366f1; }
+        .tier-lp3 { background: #fce7f3; color: #9d174d; border-color: #ec4899; }
+        .tier-hp4 { background: #f3e8ff; color: #6b21a8; border-color: #a855f7; }
+        .tier-lp4 { background: #cffafe; color: #0e7490; border-color: #06b6d4; }
+        .tier-hp5 { background: #ecfccb; color: #3f6212; border-color: #84cc16; }
+        .tier-lp5 { background: #ffedd5; color: #9a3412; border-color: #f97316; }
+        .tier-hp6 { background: #f5f5f4; color: #44403c; border-color: #78716c; }
+        .tier-lp6 { background: #f1f5f9; color: #334155; border-color: #94a3b8; }
+        .tier-hp7 { background: #e7e5e4; color: #292524; border-color: #57534e; }
+        .tier-lp7 { background: #e5e7eb; color: #1f2937; border-color: #6b7280; }
+        .tier-hp8 { background: #d6d3d1; color: #1c1917; border-color: #44403c; }
+        .tier-lp8 { background: #d1d5db; color: #111827; border-color: #374151; }
+        .tier-hp9 { background: #a8a29e; color: #0c0a09; border-color: #292524; }
+        .tier-lp9 { background: #9ca3af; color: #000; border-color: #1f2937; }
+        .tier-hp10 { background: #78716c; color: #fff; border-color: #1c1917; }
+        .tier-lp10 { background: #6b7280; color: #fff; border-color: #111827; }
+
+        /* Login Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            padding: 2rem;
+            border-radius: 1rem;
+            width: 90%;
+            max-width: 500px;
+            border: 2px solid var(--border);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .modal-header h2 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .tier-selector {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .tier-option {
+            padding: 0.5rem;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 0.25rem;
+            cursor: pointer;
+            text-align: center;
+            font-size: 0.875rem;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .tier-option:hover, .tier-option.selected {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+
+        /* Admin Panel */
+        .admin-panel {
+            display: none;
+            background: var(--bg-secondary);
+            border-radius: 1rem;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 2px solid var(--accent);
+        }
+
+        .admin-panel.active {
+            display: block;
+        }
+
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .player-row, .leaderboard-header {
+                grid-template-columns: 60px 1fr;
+                gap: 0.5rem;
+            }
+            
+            .region, .tiers {
+                display: none;
+            }
+            
+            .admin-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .success-message {
+            background: var(--success);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .error-message {
+            background: var(--danger);
+            color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <i class="fas fa-trophy"></i>
+                MCTIERS
+            </div>
+            <div class="nav-buttons">
+                <button class="btn btn-secondary" onclick="showSearch()">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <button class="btn btn-primary" id="loginBtn" onclick="showLogin()">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+                <button class="btn btn-danger hidden" id="logoutBtn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Filter Tabs -->
+    <div class="filter-container">
+        <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterGamemode('overall')">
+                <i class="fas fa-trophy"></i> Overall
+            </button>
+            <button class="filter-tab" onclick="filterGamemode('ltm')">
+                <i class="fas fa-clock"></i> LTMs
+            </button>
+            <button class="filter-tab" onclick="filterGamemode('vanilla')">
+                <i class="fas fa-cube"></i> Vanilla
+            </button>
+            <button class="filter-tab" onclick="filterGamemode('uhc')">
+                <i class="fas fa-heart"></i> UHC
+            </button>
+            <button class="filter-tab" onclick="filterGamemode('pot')">
+                <i class="fas fa-flask"></i> Pot
+            </button>
+            <button class="filter-tab" onclick="filterGamemode('nethop')">
+                <i class="fas fa-fire"></i> NethOP
+            </button>
+            <button class="filter-tab" onclick="filterGamemode('smp')">
+                <i class="fas fa-globe"></i> SMP
+            </button>
+            <button class="filter-tab" onclick="filterGamemode('sword')">
+                <i class="fas fa-khanda"></i> Sword
+            </button>
+            <button class="filter-tab" onclick="filterGamemode('axe')">
+                <i class="fas fa-hammer"></i> Axe
+            </button>
+            <button class="filter-tab" onclick="filterGamemode('mace')">
+                <i class="fas fa-gavel"></i> Mace
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Admin Panel (nur für eingeloggte Admins) -->
+        <div id="adminPanel" class="admin-panel">
+            <h2><i class="fas fa-user-shield"></i> Admin Panel</h2>
+            <div class="stats-cards">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalPlayers">0</div>
+                    <div class="stat-label">Total Players</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalHP1">0</div>
+                    <div class="stat-label">HP1 Players</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgTier">-</div>
+                    <div class="stat-label">Average Tier</div>
+                </div>
+            </div>
+
+            <div class="admin-grid">
+                <div>
+                    <h3><i class="fas fa-user-plus"></i> Spieler hinzufügen</h3>
+                    <div id="addSuccess" class="success-message">Spieler erfolgreich hinzugefügt!</div>
+                    <div id="addError" class="error-message">Fehler beim Hinzufügen!</div>
+                    <form id="addPlayerForm" onsubmit="addPlayer(event)">
+                        <div class="form-group">
+                            <label>Minecraft Name</label>
+                            <input type="text" id="playerName" required placeholder="z.B. Notch">
+                        </div>
+                        <div class="form-group">
+                            <label>Region</label>
+                            <select id="playerRegion" required>
+                                <option value="NA">Nordamerika (NA)</option>
+                                <option value="EU">Europa (EU)</option>
+                                <option value="AS">Asien (AS)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Gamemode</label>
+                            <select id="playerGamemode" required>
+                                <option value="overall">Overall</option>
+                                <option value="ltm">LTMs</option>
+                                <option value="vanilla">Vanilla</option>
+                                <option value="uhc">UHC</option>
+                                <option value="pot">Pot</option>
+                                <option value="nethop">NethOP</option>
+                                <option value="smp">SMP</option>
+                                <option value="sword">Sword</option>
+                                <option value="axe">Axe</option>
+                                <option value="mace">Mace</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Punkte</label>
+                            <input type="number" id="playerPoints" required min="0" placeholder="z.B. 450">
+                        </div>
+                        <div class="form-group">
+                            <label>Tier (LP10 - HP1)</label>
+                            <div class="tier-selector" id="tierSelector">
+                                <!-- Wird per JS generiert -->
+                            </div>
+                            <input type="hidden" id="selectedTier" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width: 100%;">
+                            <i class="fas fa-plus"></i> Spieler hinzufügen
+                        </button>
+                    </form>
+                </div>
+
+                <div>
+                    <h3><i class="fas fa-edit"></i> Spieler bearbeiten/löschen</h3>
+                    <div id="editSuccess" class="success-message">Änderungen gespeichert!</div>
+                    <div id="editList" style="max-height: 400px; overflow-y: auto;">
+                        <!-- Wird per JS generiert -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard -->
+        <div class="leaderboard">
+            <div class="leaderboard-header">
+                <div>#</div>
+                <div>SPIELER</div>
+                <div>REGION</div>
+                <div>TIERS</div>
+            </div>
+            <div id="leaderboardBody">
+                <!-- Wird per JS generiert -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-sign-in-alt"></i> Login</h2>
+                <p style="color: var(--text-secondary);">Admin/Tester Login</p>
+            </div>
+            <div id="loginError" class="error-message">Falsche Zugangsdaten!</div>
+            <form onsubmit="login(event)">
+                <div class="form-group">
+                    <label>Benutzername</label>
+                    <input type="text" id="loginUsername" required placeholder="admin">
+                </div>
+                <div class="form-group">
+                    <label>Passwort</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fas fa-sign-in-alt"></i> Einloggen
+                </button>
+            </form>
+            <button class="btn btn-secondary" style="width: 100%; margin-top: 1rem;" onclick="closeLogin()">
+                Abbrechen
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Daten (wird später durch Supabase/API ersetzt)
+        let players = [
+            {
+                id: 1,
+                name: "Marlowww",
+                rank: "Combat Grandmaster",
+                points: 450,
+                region: "NA",
+                gamemode: "overall",
+                tiers: ["HT1", "HT1", "LT1", "HT1", "HT1", "HT1", "LT1", "LT1"]
+            },
+            {
+                id: 2,
+                name: "ItzRealMe",
+                rank: "Combat Master",
+                points: 330,
+                region: "NA",
+                gamemode: "overall",
+                tiers: ["HT3", "HT1", "HT1", "HT1", "HT1", "LT2", "LT2", "LT2"]
+            },
+            {
+                id: 3,
+                name: "coldified",
+                rank: "Combat Master",
+                points: 326,
+                region: "EU",
+                gamemode: "overall",
+                tiers: ["LT1", "LT1", "LT3", "HT1", "HT1", "LT1", "LT1", "LT2"]
+            }
+        ];
+
+        let currentUser = null;
+        let currentFilter = 'overall';
+        let selectedTierValue = '';
+
+        // Tier Liste generieren
+        const tiers = [];
+        for (let i = 10; i >= 1; i--) {
+            tiers.push(`LP${i}`);
+            tiers.push(`HP${i}`);
+        }
+
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTierSelector();
+            renderLeaderboard();
+            checkAuth();
+        });
+
+        function renderTierSelector() {
+            const container = document.getElementById('tierSelector');
+            container.innerHTML = tiers.map(tier => `
+                <div class="tier-option" onclick="selectTier('${tier}')">${tier}</div>
+            `).join('');
+        }
+
+        function selectTier(tier) {
+            selectedTierValue = tier;
+            document.getElementById('selectedTier').value = tier;
+            document.querySelectorAll('.tier-option').forEach(el => {
+                el.classList.remove('selected');
+                if (el.textContent === tier) el.classList.add('selected');
+            });
+        }
+
+        function renderLeaderboard() {
+            const body = document.getElementById('leaderboardBody');
+            const filtered = players.filter(p => p.gamemode === currentFilter || currentFilter === 'overall');
+            const sorted = filtered.sort((a, b) => b.points - a.points);
+
+            if (sorted.length === 0) {
+                body.innerHTML = '<div style="padding: 2rem; text-align: center; color: var(--text-secondary);">Keine Spieler gefunden</div>';
+                return;
+            }
+
+            body.innerHTML = sorted.map((player, index) => {
+                const rank = index + 1;
+                const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'rank-other';
+                const regionClass = `region-${player.region.toLowerCase()}`;
+                
+                return `
+                    <div class="player-row">
+                        <div class="rank ${rankClass}">${rank}.</div>
+                        <div class="player-info">
+                            <div class="player-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="player-details">
+                                <h3>${player.name}</h3>
+                                <div class="player-rank-title">
+                                    <i class="fas fa-medal" style="color: var(--accent);"></i>
+                                    ${player.rank} (${player.points} points)
+                                </div>
+                            </div>
+                        </div>
+                        <div><span class="region ${regionClass}">${player.region}</span></div>
+                        <div class="tiers">
+                            ${player.tiers.map(tier => {
+                                const tierClass = tier.toLowerCase().replace(/\d/, '');
+                                return `<span class="tier-badge tier-${tierClass}">${tier}</span>`;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            updateStats();
+        }
+
+        function updateStats() {
+            document.getElementById('totalPlayers').textContent = players.length;
+            const hp1Count = players.filter(p => p.tiers.includes('HP1')).length;
+            document.getElementById('totalHP1').textContent = hp1Count;
+        }
+
+        function filterGamemode(mode) {
+            currentFilter = mode;
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.remove('active');
+                if (tab.textContent.toLowerCase().includes(mode) || (mode === 'overall' && tab.textContent.includes('Overall'))) {
+                    tab.classList.add('active');
+                }
+            });
+            renderLeaderboard();
+        }
+
+        // Auth Funktionen
+        function showLogin() {
+            document.getElementById('loginModal').classList.add('active');
+        }
+
+        function closeLogin() {
+            document.getElementById('loginModal').classList.remove('active');
+            document.getElementById('loginError').style.display = 'none';
+        }
+
+        function login(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            // Demo-Credentials (später durch echte Auth ersetzen)
+            if (username === 'admin' && password === 'admin123') {
+                currentUser = { username, role: 'admin' };
+                localStorage.setItem('mcTiersUser', JSON.stringify(currentUser));
+                checkAuth();
+                closeLogin();
+            } else {
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('mcTiersUser');
+            checkAuth();
+        }
+
+        function checkAuth() {
+            const saved = localStorage.getItem('mcTiersUser');
+            if (saved) {
+                currentUser = JSON.parse(saved);
+                document.getElementById('loginBtn').classList.add('hidden');
+                document.getElementById('logoutBtn').classList.remove('hidden');
+                document.getElementById('adminPanel').classList.add('active');
+                renderEditList();
+            } else {
+                document.getElementById('loginBtn').classList.remove('hidden');
+                document.getElementById('logoutBtn').classList.add('hidden');
+                document.getElementById('adminPanel').classList.remove('active');
+            }
+        }
+
+        // Admin Funktionen
+        function addPlayer(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('playerName').value;
+            const region = document.getElementById('playerRegion').value;
+            const gamemode = document.getElementById('playerGamemode').value;
+            const points = parseInt(document.getElementById('playerPoints').value);
+            const tier = document.getElementById('selectedTier').value;
+
+            if (!tier) {
+                alert('Bitte wähle ein Tier aus!');
+                return;
+            }
+
+            const newPlayer = {
+                id: Date.now(),
+                name: name,
+                rank: calculateRank(points),
+                points: points,
+                region: region,
+                gamemode: gamemode,
+                tiers: [tier] // Erstes Tier, kann erweitert werden
+            };
+
+            players.push(newPlayer);
+            renderLeaderboard();
+            renderEditList();
+            
+            document.getElementById('addSuccess').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('addSuccess').style.display = 'none';
+            }, 3000);
+
+            document.getElementById('addPlayerForm').reset();
+            document.querySelectorAll('.tier-option').forEach(el => el.classList.remove('selected'));
+            selectedTierValue = '';
+        }
+
+        function calculateRank(points) {
+            if (points >= 400) return "Combat Grandmaster";
+            if (points >= 300) return "Combat Master";
+            if (points >= 200) return "Combat Ace";
+            if (points >= 100) return "Combat Veteran";
+            return "Combat Rookie";
+        }
+
+        function renderEditList() {
+            const container = document.getElementById('editList');
+            container.innerHTML = players.map(player => `
+                <div style="background: var(--bg-card); padding: 1rem; margin-bottom: 0.5rem; border-radius: 0.5rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>${player.name}</strong> - ${player.points} Pkt.
+                    </div>
+                    <div>
+                        <button class="btn btn-secondary" onclick="editPlayer(${player.id})" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger" onclick="deletePlayer(${player.id})" style="padding: 0.25rem 0.5rem; font-size: 0.875rem;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function deletePlayer(id) {
+            if (confirm('Spieler wirklich löschen?')) {
+                players = players.filter(p => p.id !== id);
+                renderLeaderboard();
+                renderEditList();
+            }
+        }
+
+        function editPlayer(id) {
+            const player = players.find(p => p.id === id);
+            if (!player) return;
+
+            const newPoints = prompt('Neue Punkte:', player.points);
+            if (newPoints !== null) {
+                player.points = parseInt(newPoints);
+                player.rank = calculateRank(player.points);
+                renderLeaderboard();
+                renderEditList();
+                
+                document.getElementById('editSuccess').style.display = 'block';
+                setTimeout(() => {
+                    document.getElementById('editSuccess').style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function showSearch() {
+            const search = prompt('Spielername suchen:');
+            if (search) {
+                const found = players.find(p => p.name.toLowerCase().includes(search.toLowerCase()));
+                if (found) {
+                    alert(`Gefunden: ${found.name}\nPunkte: ${found.points}\nRank: ${found.rank}`);
+                } else {
+                    alert('Spieler nicht gefunden!');
+                }
+            }
+        }
+
+        // Modal schließen beim Klick außerhalb
+        window.onclick = function(event) {
+            const modal = document.getElementById('loginModal');
+            if (event.target === modal) {
+                closeLogin();
+            }
+        }
+    </script>
+</body>
+</html>
