@@ -14,329 +14,726 @@
             --danger: #ff4444;
             --gold: #ffd700;
             --text: #e0e6ed;
+            --text-muted: #8892a6;
         }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 0; 
+            line-height: 1.5;
+        }
         
         /* Header */
-        header { background: var(--card); padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 1.5rem; font-weight: bold; color: var(--primary); text-transform: uppercase; letter-spacing: 2px; }
-        nav button { background: none; border: 1px solid var(--border); color: var(--text); padding: 0.5rem 1rem; cursor: pointer; border-radius: 4px; margin-left: 0.5rem; transition: 0.3s; }
-        nav button:hover { background: var(--primary); color: #000; }
+        header { 
+            background: var(--card); 
+            padding: 1rem 2rem; 
+            border-bottom: 1px solid var(--border); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .logo { 
+            font-size: 1.5rem; 
+            font-weight: 700; 
+            color: var(--primary); 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+        }
+        .nav-buttons { display: flex; gap: 0.75rem; align-items: center; }
+        .nav-btn { 
+            background: transparent; 
+            border: 1px solid var(--border); 
+            color: var(--text); 
+            padding: 0.5rem 1.25rem; 
+            cursor: pointer; 
+            border-radius: 6px; 
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .nav-btn:hover { background: var(--primary); color: #000; border-color: var(--primary); }
+        .nav-btn.primary { background: var(--primary); color: #000; border-color: var(--primary); }
+        .nav-btn.primary:hover { background: #00cc6a; }
+        .nav-btn.danger { background: var(--danger); color: white; border-color: var(--danger); }
+        .nav-btn.danger:hover { background: #cc0000; }
 
         /* Container */
-        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
 
-        /* Views */
-        .view { display: none; }
-        .view.active { display: block; }
+        /* Toggle Switch */
+        .view-toggle { 
+            display: flex; 
+            align-items: center; 
+            gap: 1rem; 
+            margin-bottom: 1.5rem; 
+            padding: 1rem; 
+            background: var(--card); 
+            border-radius: 8px; 
+            border: 1px solid var(--border);
+        }
+        .toggle-label { font-weight: 500; color: var(--text-muted); }
+        .switch {
+            position: relative;
+            width: 60px;
+            height: 32px;
+        }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--border);
+            transition: 0.3s;
+            border-radius: 32px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 24px; width: 24px;
+            left: 4px; bottom: 4px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(28px); }
 
         /* Leaderboard Table */
-        table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 8px; overflow: hidden; }
-        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border); }
-        th { background: #1a2233; color: var(--primary); }
+        .table-container { 
+            background: var(--card); 
+            border-radius: 10px; 
+            overflow: hidden; 
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 1rem 1.25rem; text-align: left; border-bottom: 1px solid var(--border); }
+        th { 
+            background: #1a2233; 
+            color: var(--primary); 
+            font-weight: 600; 
+            text-transform: uppercase; 
+            font-size: 0.85rem; 
+            letter-spacing: 0.5px;
+        }
         tr:hover { background: #1f2738; }
         
-        /* Tiers Colors */
-        .tier { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.9rem; }
-        .hp { background: rgba(0, 255, 136, 0.2); color: #00ff88; border: 1px solid #00ff88; }
-        .lp { background: rgba(255, 68, 68, 0.2); color: #ff4444; border: 1px solid #ff4444; }
-        .tier-HP1 { background: var(--gold); color: #000; border: 1px solid var(--gold); box-shadow: 0 0 10px var(--gold); }
+        /* Rank Badge */
+        .rank { 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            width: 32px; height: 32px; 
+            border-radius: 6px; 
+            font-weight: 700; 
+            font-size: 0.9rem;
+        }
+        .rank-1 { background: var(--gold); color: #000; }
+        .rank-2 { background: #c0c0c0; color: #000; }
+        .rank-3 { background: #cd7f32; color: #000; }
+        .rank-other { background: var(--border); color: var(--text-muted); }
 
-        /* Forms */
-        .form-box { max-width: 400px; margin: 2rem auto; background: var(--card); padding: 2rem; border-radius: 8px; border: 1px solid var(--border); }
-        input, select { width: 100%; padding: 0.8rem; margin-bottom: 1rem; background: var(--bg); border: 1px solid var(--border); color: white; border-radius: 4px; }
-        button.action-btn { width: 100%; padding: 1rem; background: var(--primary); color: #000; border: none; font-weight: bold; cursor: pointer; }
-        
-        /* Admin Panel */
-        .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
-        .admin-card { background: var(--card); padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border); }
-        .role-badge { padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; text-transform: uppercase; }
+        /* Player Name */
+        .player-name { font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+        .player-role { 
+            font-size: 0.75rem; 
+            padding: 2px 8px; 
+            border-radius: 4px; 
+            text-transform: uppercase; 
+            font-weight: 600;
+        }
         .role-owner { background: var(--gold); color: #000; }
-        .role-cheater { background: var(--danger); color: #fff; }
+        .role-admin { background: #6366f1; color: white; }
+        .role-co { background: #8b5cf6; color: white; }
+        .role-tester { background: #10b981; color: white; }
+        .role-cheater { background: var(--danger); color: white; }
         .role-banned { background: #333; color: #666; text-decoration: line-through; }
+        .role-player { background: var(--border); color: var(--text-muted); }
 
-        /* Modal */
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; }
-        .modal-content { background: var(--card); padding: 2rem; border-radius: 8px; width: 400px; }
+        /* Tiers */
+        .tier { 
+            padding: 4px 10px; 
+            border-radius: 5px; 
+            font-weight: 600; 
+            font-size: 0.85rem; 
+            display: inline-block;
+            min-width: 55px;
+            text-align: center;
+        }
+        .tier.hp { background: rgba(0, 255, 136, 0.15); color: #00ff88; border: 1px solid #00ff88; }
+        .tier.lp { background: rgba(255, 68, 68, 0.15); color: #ff6b6b; border: 1px solid #ff6b6b; }
+        .tier.HP1 { background: var(--gold); color: #000; border-color: var(--gold); box-shadow: 0 0 12px rgba(255, 215, 0, 0.4); }
+
+        /* Tier Grid (expanded view) */
+        .tier-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(55px, 1fr)); 
+            gap: 6px; 
+            max-width: 400px;
+        }
+        .tier-grid.compact { display: none; }
+        .tier-grid.expanded { display: grid; }
+
+        /* Auth Form */
+        .auth-container { 
+            max-width: 420px; 
+            margin: 3rem auto; 
+            background: var(--card); 
+            padding: 2rem; 
+            border-radius: 10px; 
+            border: 1px solid var(--border);
+        }
+        .auth-title { text-align: center; margin-bottom: 1.5rem; font-size: 1.5rem; }
+        .form-group { margin-bottom: 1.25rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
+        .form-input { 
+            width: 100%; 
+            padding: 0.85rem; 
+            background: var(--bg); 
+            border: 1px solid var(--border); 
+            color: var(--text); 
+            border-radius: 6px; 
+            font-size: 1rem;
+        }
+        .form-input:focus { outline: none; border-color: var(--primary); }
+        .auth-switch { 
+            text-align: center; 
+            margin-top: 1rem; 
+            color: var(--text-muted); 
+            cursor: pointer; 
+            font-size: 0.9rem;
+        }
+        .auth-switch:hover { color: var(--primary); }
+
+        /* Admin Panel */
+        .admin-panel { 
+            display: none; 
+            background: var(--card); 
+            padding: 2rem; 
+            border-radius: 10px; 
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+        }
+        .admin-panel.active { display: block; }
+        .admin-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+        .admin-card { 
+            background: var(--bg); 
+            padding: 1.5rem; 
+            border-radius: 8px; 
+            border: 1px solid var(--border);
+        }
+        .admin-card h3 { margin-bottom: 1.25rem; color: var(--primary); }
+        
+        /* Status Message */
+        .status-msg { 
+            padding: 0.75rem 1rem; 
+            border-radius: 6px; 
+            margin-bottom: 1rem; 
+            display: none; 
+        }
+        .status-msg.success { background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981; }
+        .status-msg.error { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444; }
+
+        /* Loading State */
+        .loading { text-align: center; padding: 3rem; color: var(--text-muted); }
+        
+        /* Responsive */
+        @media (max-width: 900px) {
+            .admin-grid { grid-template-columns: 1fr; }
+            .tier-grid { grid-template-columns: repeat(4, 1fr); }
+            th, td { padding: 0.75rem; font-size: 0.9rem; }
+        }
+        @media (max-width: 600px) {
+            header { flex-direction: column; gap: 1rem; padding: 1rem; }
+            .tier-grid { grid-template-columns: repeat(3, 1fr); }
+            .container { padding: 1rem; }
+        }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="logo"> MC Power</div>
-    <nav id="nav-menu">
-        <button onclick="showView('view-home')">Home</button>
-        <button onclick="showView('view-auth')" id="btn-login">Login / Register</button>
-        <button onclick="logout()" id="btn-logout" style="display:none;">Logout</button>
+    <div class="logo">MC Power</div>
+    <nav class="nav-buttons">
+        <button class="nav-btn" id="toggleAuth" onclick="toggleAuthView()">Anmelden</button>
+        <button class="nav-btn danger" id="logoutBtn" onclick="doLogout()" style="display:none;">Abmelden</button>
     </nav>
 </header>
 
 <div class="container">
-    
-    <!-- VIEW: Home / Leaderboard -->
-    <div id="view-home" class="view active">
-        <h1 style="border-bottom: 2px solid var(--primary); padding-bottom: 0.5rem; display: inline-block;">🏆 Top Leaderboard</h1>
-        <div style="margin-top: 1rem;">
-            <select id="filter-gamemode" onchange="loadLeaderboard()" style="width: auto; display: inline-block;">
-                <option value="all">Alle Modi</option>
-                <option value="1v1">1v1</option>
-                <option value="FFA">FFA</option>
-                <option value="UHC">UHC</option>
-            </select>
+
+    <!-- Admin Panel (nur für Admins) -->
+    <div id="adminPanel" class="admin-panel">
+        <div class="admin-grid">
+            <div class="admin-card">
+                <h3>Spieler verwalten</h3>
+                <div id="adminMsg" class="status-msg"></div>
+                <div class="form-group">
+                    <label>Minecraft Name</label>
+                    <input type="text" id="admName" class="form-input" placeholder="z.B. Notch">
+                </div>
+                <div class="form-group">
+                    <label>Region</label>
+                    <select id="admRegion" class="form-input">
+                        <option value="EU">Europa</option>
+                        <option value="NA">Nordamerika</option>
+                        <option value="DE">Deutschland</option>
+                        <option value="AS">Asien</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>PvP-Modus</label>
+                    <select id="admMode" class="form-input">
+                        <option value="1v1">1v1</option>
+                        <option value="FFA">FFA</option>
+                        <option value="UHC">UHC</option>
+                        <option value="PotPvP">PotPvP</option>
+                        <option value="Crystal">Crystal</option>
+                        <option value="Axe">Axe</option>
+                        <option value="Sword">Sword</option>
+                        <option value="Mace">Mace</option>
+                        <option value="NethPot">NethPot</option>
+                        <option value="Sumo">Sumo</option>
+                        <option value="Bridge">Bridge</option>
+                        <option value="Practice">Practice</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Punkte</label>
+                        <input type="number" id="admPoints" class="form-input" placeholder="0" min="0">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Tier</label>
+                        <select id="admTier" class="form-input"></select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Rolle</label>
+                    <select id="admRole" class="form-input">
+                        <option value="player">Player</option>
+                        <option value="tester">Tester</option>
+                        <option value="co">Co-Admin</option>
+                        <option value="admin">Admin</option>
+                        <option value="owner">Owner</option>
+                        <option value="cheater">Cheater</option>
+                        <option value="banned">Banned</option>
+                    </select>
+                </div>
+                <button class="nav-btn primary" onclick="savePlayer()">Speichern</button>
+            </div>
+
+            <div class="admin-card">
+                <h3>Einstellungen</h3>
+                <div class="form-group">
+                    <label>Neues Passwort</label>
+                    <input type="password" id="newPass" class="form-input" placeholder="••••••••">
+                </div>
+                <button class="nav-btn" onclick="changePassword()">Passwort ändern</button>
+                <hr style="border-color:var(--border); margin:1.5rem 0;">
+                <h3>Alle Spieler</h3>
+                <div id="playerList" style="max-height:250px; overflow-y:auto;"></div>
+            </div>
         </div>
-        <br>
+    </div>
+
+    <!-- Toggle View Switch -->
+    <div class="view-toggle">
+        <span class="toggle-label">Kompakt</span>
+        <label class="switch">
+            <input type="checkbox" id="viewToggle" onchange="toggleViewMode()">
+            <span class="slider"></span>
+        </label>
+        <span class="toggle-label">Alle Powers anzeigen</span>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="table-container">
         <table>
             <thead>
                 <tr>
-                    <th>#</th>
-                    <th>Name</th>
+                    <th style="width:60px;">Rang</th>
+                    <th>Spieler</th>
                     <th>Region</th>
                     <th>Modus</th>
                     <th>Punkte</th>
                     <th>Tier</th>
-                    <th>Status</th>
+                    <th style="width:100px;">Rolle</th>
                 </tr>
             </thead>
-            <tbody id="leaderboard-body">
-                <!-- Daten laden -->
+            <tbody id="leaderboardBody">
+                <tr><td colspan="7" class="loading">Lade Leaderboard...</td></tr>
             </tbody>
         </table>
     </div>
 
-    <!-- VIEW: Auth -->
-    <div id="view-auth" class="view">
-        <div class="form-box">
-            <h2 style="text-align:center;">Account</h2>
-            <input type="text" id="auth-user" placeholder="Username (Minecraft Name)">
-            <input type="password" id="auth-pass" placeholder="Passwort">
-            <button class="action-btn" onclick="handleAuth('login')">Login</button>
-            <div style="text-align:center; margin-top: 1rem; cursor: pointer; color: var(--primary);" onclick="handleAuth('register')">
-                Noch keinen Account? Registrieren
-            </div>
-        </div>
+</div>
+
+<!-- Auth Modal -->
+<div id="authContainer" class="auth-container" style="display:none;">
+    <h2 class="auth-title" id="authTitle">Anmelden</h2>
+    <div id="authMsg" class="status-msg"></div>
+    <div class="form-group">
+        <label>Benutzername</label>
+        <input type="text" id="authUser" class="form-input" placeholder="Dein Name">
     </div>
-
-    <!-- VIEW: Dashboard (Admin/Tester) -->
-    <div id="view-dashboard" class="view">
-        <h1>⚙️ Admin Dashboard</h1>
-        <div class="admin-grid">
-            
-            <!-- Spieler Hinzufügen / Bearbeiten -->
-            <div class="admin-card">
-                <h3>➕ Spieler Verwalten</h3>
-                <input type="text" id="adm-name" placeholder="Minecraft Name">
-                <select id="adm-region">
-                    <option value="EU">Europe</option>
-                    <option value="NA">North America</option>
-                    <option value="DE">Germany</option>
-                </select>
-                <select id="adm-gamemode">
-                    <option value="1v1">1v1</option>
-                    <option value="FFA">FFA</option>
-                    <option value="UHC">UHC</option>
-                </select>
-                <div style="display: flex; gap: 10px;">
-                    <input type="number" id="adm-points" placeholder="Punkte">
-                    <select id="adm-tier">
-                        <!-- JS generiert Tiers -->
-                    </select>
-                </div>
-                <select id="adm-role">
-                    <option value="player">Player</option>
-                    <option value="tester">Tester</option>
-                    <option value="co">Co-Admin</option>
-                    <option value="admin">Admin</option>
-                    <option value="owner">Owner</option>
-                    <option value="cheater">⛔ Cheater</option>
-                    <option value="banned">⛔ Banned</option>
-                </select>
-                <button class="action-btn" onclick="savePlayer()">Speichern / Updaten</button>
-                <div id="adm-msg" style="color: var(--primary); margin-top: 10px;"></div>
-            </div>
-
-            <!-- Einstellungen -->
-            <div class="admin-card">
-                <h3>🔒 Einstellungen & Sicherheit</h3>
-                <p style="color: #888; font-size: 0.9rem;">Hier kannst du dein Passwort ändern oder Spieler listen.</p>
-                <input type="password" id="new-pass" placeholder="Neues Passwort">
-                <button class="action-btn" onclick="changePassword()">Passwort ändern</button>
-                <hr style="border-color: var(--border); margin: 1rem 0;">
-                <h3>📋 Liste aller Spieler (DB)</h3>
-                <div id="db-player-list" style="max-height: 200px; overflow-y: auto;">Lade...</div>
-            </div>
-        </div>
+    <div class="form-group">
+        <label>Passwort</label>
+        <input type="password" id="authPass" class="form-input" placeholder="••••••••">
     </div>
-
+    <button class="nav-btn primary" onclick="handleAuth()" id="authBtn">Anmelden</button>
+    <div class="auth-switch" onclick="toggleAuthMode()" id="authSwitch">
+        Noch kein Account? Registrieren
+    </div>
+    <div class="auth-switch" style="margin-top:0.5rem;" onclick="closeAuth()">
+        Abbrechen
+    </div>
 </div>
 
 <script>
-    // KONFIGURATION
-    const SUPABASE_URL = 'https://yqgtlfbykubjizqghiat.supabase.co'; // <-- HIER DEINE URL
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3RsZmJ5a3Viaml6cWdoaWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDQ0NzIsImV4cCI6MjA5MjcyMDQ3Mn0.qY9zREp-l_dpKJT1fnX6tiYKdsUwv0QNLezbUTkwTho'; // <-- HIER DEIN KEY
+    // ===== KONFIGURATION =====
+    const SUPABASE_URL = 'https://yqgtlfbykubjizqghiat.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3RsZmJ5a3Viaml6cWdoaWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDQ0NzIsImV4cCI6MjA5MjcyMDQ3Mn0.qY9zREp-l_dpKJT1fnX6tiYKdsUwv0QNLezbUTkwTho';
     
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // State
     let currentUser = null;
-    let userRole = 'guest';
+    let userRole = 'player';
+    let isLoginMode = true;
+    let showExpandedView = false;
 
-    // Tiers Generieren
-    const tierSelect = document.getElementById('adm-tier');
-    for(let i=10; i>=1; i--) {
-        tierSelect.innerHTML += `<option value="LP${i}">LP${i} (Low Power)</option>`;
-        tierSelect.innerHTML += `<option value="HP${i}">HP${i} (High Power)</option>`;
+    // ===== INIT =====
+    document.addEventListener('DOMContentLoaded', async () => {
+        generateTierOptions();
+        await checkSession();
+        await loadLeaderboard();
+        if(userRole !== 'player' && userRole !== 'guest') {
+            document.getElementById('adminPanel').classList.add('active');
+            loadPlayerList();
+        }
+    });
+
+    // ===== TIER OPTIONS =====
+    function generateTierOptions() {
+        const select = document.getElementById('admTier');
+        const tiers = [];
+        for(let i=10; i>=1; i--) { tiers.push(`LP${i}`, `HP${i}`); }
+        tiers.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = t + (t.includes('HP') ? ' (High)' : ' (Low)');
+            select.appendChild(opt);
+        });
     }
 
-    // Navigation
-    function showView(id) {
-        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        if(id === 'view-home') loadLeaderboard();
+    // ===== AUTH =====
+    function toggleAuthView() {
+        const auth = document.getElementById('authContainer');
+        auth.style.display = auth.style.display === 'none' ? 'block' : 'none';
+    }
+    function closeAuth() {
+        document.getElementById('authContainer').style.display = 'none';
+        clearAuthMsg();
+    }
+    function toggleAuthMode() {
+        isLoginMode = !isLoginMode;
+        document.getElementById('authTitle').textContent = isLoginMode ? 'Anmelden' : 'Registrieren';
+        document.getElementById('authBtn').textContent = isLoginMode ? 'Anmelden' : 'Registrieren';
+        document.getElementById('authSwitch').textContent = isLoginMode ? 'Noch kein Account? Registrieren' : 'Bereits Account? Anmelden';
+        clearAuthMsg();
+    }
+    function clearAuthMsg() {
+        const msg = document.getElementById('authMsg');
+        msg.className = 'status-msg';
+        msg.style.display = 'none';
+        msg.textContent = '';
+    }
+    function showAuthMsg(text, isError) {
+        const msg = document.getElementById('authMsg');
+        msg.className = 'status-msg ' + (isError ? 'error' : 'success');
+        msg.style.display = 'block';
+        msg.textContent = text;
     }
 
-    // Auth Logic
-    async function handleAuth(type) {
-        const user = document.getElementById('auth-user').value;
-        const pass = document.getElementById('auth-pass').value;
+    async function handleAuth() {
+        const username = document.getElementById('authUser').value.trim();
+        const password = document.getElementById('authPass').value;
         
-        if(type === 'register') {
-            const { data, error } = await supabase.auth.signUp({
-                email: user.toLowerCase() + '@mcpower.local', // Fake Email Hack
-                password: pass
-            });
-            if(!error && data.user) {
-                // Spieler anlegen
-                await supabase.from('players').insert([{ user_id: data.user.id, username: user, role: 'player' }]);
-                alert('Registrierung erfolgreich! Bitte einloggen.');
-            } else { alert('Fehler: ' + error.message); }
-        } else {
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: user.toLowerCase() + '@mcpower.local',
-                password: pass
-            });
-            if(!error) {
-                currentUser = data.user;
-                document.getElementById('btn-login').style.display = 'none';
-                document.getElementById('btn-logout').style.display = 'inline-block';
-                showView('view-dashboard');
-                loadAdminData();
-            } else { alert('Login fehlgeschlagen!'); }
+        if(!username || !password) {
+            showAuthMsg('Bitte Name und Passwort eingeben', true);
+            return;
+        }
+
+        try {
+            if(isLoginMode) {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: username.toLowerCase() + '@mcpower.local',
+                    password: password
+                });
+                if(error) throw error;
+                await onAuthSuccess(data.user);
+            } else {
+                const { data, error } = await supabase.auth.signUp({
+                    email: username.toLowerCase() + '@mcpower.local',
+                    password: password
+                });
+                if(error) throw error;
+                // Spieler-Eintrag erstellen
+                if(data.user) {
+                    await supabase.from('players').insert([{
+                        user_id: data.user.id,
+                        username: username,
+                        display_name: username,
+                        role: 'player'
+                    }]);
+                }
+                showAuthMsg('Registrierung erfolgreich! Bitte einloggen.', false);
+                isLoginMode = true;
+                toggleAuthMode();
+            }
+        } catch(err) {
+            console.error('Auth error:', err);
+            showAuthMsg(err.message || 'Fehler bei der Authentifizierung', true);
         }
     }
 
-    async function logout() {
+    async function onAuthSuccess(user) {
+        currentUser = user;
+        document.getElementById('toggleAuth').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'inline-block';
+        closeAuth();
+        
+        // Rolle laden
+        const { data } = await supabase.from('players')
+            .select('role')
+            .eq('user_id', user.id)
+            .single();
+        userRole = data?.role || 'player';
+        
+        if(userRole !== 'player') {
+            document.getElementById('adminPanel').classList.add('active');
+            loadPlayerList();
+        }
+        await loadLeaderboard();
+    }
+
+    async function doLogout() {
         await supabase.auth.signOut();
         location.reload();
     }
 
-    // Check Session on Load
     async function checkSession() {
-        const { data: { session } } = await supabase.auth.getSession();
-        if(session) {
-            currentUser = session.user;
-            document.getElementById('btn-login').style.display = 'none';
-            document.getElementById('btn-logout').style.display = 'inline-block';
-            
-            // Rolle holen
-            const { data } = await supabase.from('players').select('role').eq('user_id', currentUser.id).single();
-            userRole = data?.role || 'player';
-            
-            if(userRole !== 'player') showView('view-dashboard');
-            else showView('view-home');
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if(session?.user) {
+                await onAuthSuccess(session.user);
+            }
+        } catch(err) {
+            console.error('Session check error:', err);
         }
     }
-    checkSession();
 
-    // Leaderboard Laden
-    async function loadLeaderboard() {
-        const mode = document.getElementById('filter-gamemode').value;
-        let query = supabase.from('leaderboard').select('*, players(display_name, region, role, is_banned, is_cheater)').order('points', { ascending: false });
-        
-        if(mode !== 'all') query = query.eq('gamemode', mode);
-        
-        const { data } = await query;
-        const tbody = document.getElementById('leaderboard-body');
-        tbody.innerHTML = '';
-
-        let rank = 1;
-        data.forEach(row => {
-            if(row.players.is_banned) return; // Banned nicht anzeigen
-
-            const tierClass = row.tier.includes('HP') ? 'hp' : 'lp';
-            const isCheater = row.players.is_cheater ? '<span style="color: red;">⚠️ Cheater</span>' : '';
-            
-            tbody.innerHTML += `
-                <tr>
-                    <td style="font-weight:bold; font-size: 1.2rem;">${rank}</td>
-                    <td><strong>${row.players.display_name}</strong> ${isCheater}</td>
-                    <td>${row.players.region}</td>
-                    <td>${row.gamemode}</td>
-                    <td>${row.points}</td>
-                    <td><span class="tier tier-${row.tier} ${tierClass}">${row.tier}</span></td>
-                    <td>${row.players.role.toUpperCase()}</td>
-                </tr>
-            `;
-            rank++;
-        });
-    }
-
-    // Admin Funktionen
-    async function savePlayer() {
-        const name = document.getElementById('adm-name').value;
-        const region = document.getElementById('adm-region').value;
-        const mode = document.getElementById('adm-gamemode').value;
-        const points = document.getElementById('adm-points').value;
-        const tier = document.getElementById('adm-tier').value;
-        const role = document.getElementById('adm-role').value;
-
-        if(!name) return alert("Name fehlt!");
-
-        // Prüfen ob Spieler existiert, sonst anlegen
-        let { data: player } = await supabase.from('players').select('id').eq('username', name).single();
-
-        if(!player) {
-            // Neuen Spieler anlegen
-            const { data: newPlayer } = await supabase.from('players').insert([
-                { username: name, display_name: name, region: region, role: role }
-            ]).select().single();
-            player = newPlayer;
-        } else {
-            // Update Rolle/Region
-            await supabase.from('players').update({ region: region, role: role }).eq('id', player.id);
-        }
-
-        // Leaderboard Eintrag (Upsert)
-        await supabase.from('leaderboard').upsert({
-            player_id: player.id,
-            gamemode: mode,
-            points: parseInt(points),
-            tier: tier
-        }, { onConflict: 'player_id, gamemode' });
-
-        document.getElementById('adm-msg').innerText = "Erfolgreich gespeichert!";
-        setTimeout(() => document.getElementById('adm-msg').innerText = "", 2000);
+    // ===== LEADERBOARD =====
+    function toggleViewMode() {
+        showExpandedView = document.getElementById('viewToggle').checked;
         loadLeaderboard();
     }
 
-    async function loadAdminData() {
-        const { data } = await supabase.from('players').select('*').order('created_at', { ascending: false });
-        const list = document.getElementById('db-player-list');
-        list.innerHTML = '';
-        data.forEach(p => {
-            list.innerHTML += `<div style="padding: 5px; border-bottom: 1px solid #333; display:flex; justify-content:space-between;">
-                <span>${p.display_name}</span> 
-                <span class="role-badge role-${p.role}">${p.role}</span>
-            </div>`;
-        });
+    async function loadLeaderboard() {
+        const tbody = document.getElementById('leaderboardBody');
+        tbody.innerHTML = '<tr><td colspan="7" class="loading">Lade Daten...</td></tr>';
+
+        try {
+            // Alle Einträge laden, gruppiert nach Spieler
+            const { data, error } = await supabase
+                .from('leaderboard')
+                .select(`
+                    *,
+                    players (
+                        id,
+                        username,
+                        display_name,
+                        region,
+                        role,
+                        is_cheater,
+                        is_banned
+                    )
+                `)
+                .order('points', { ascending: false });
+
+            if(error) throw error;
+
+            // Gruppiere nach Spieler
+            const playerMap = new Map();
+            data.forEach(entry => {
+                const p = entry.players;
+                if(!p || p.is_banned) return;
+                
+                if(!playerMap.has(p.id)) {
+                    playerMap.set(p.id, {
+                        player: p,
+                        entries: []
+                    });
+                }
+                playerMap.get(p.id).entries.push(entry);
+            });
+
+            // Sortiere nach höchstem Punkte-Wert pro Spieler
+            const sorted = Array.from(playerMap.values()).sort((a,b) => {
+                const maxA = Math.max(...a.entries.map(e => e.points));
+                const maxB = Math.max(...b.entries.map(e => e.points));
+                return maxB - maxA;
+            });
+
+            if(sorted.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem;">Keine Spieler gefunden</td></tr>';
+                return;
+            }
+
+            // Render
+            tbody.innerHTML = sorted.map((item, idx) => {
+                const p = item.player;
+                const bestEntry = item.entries.reduce((max, e) => e.points > max.points ? e : max);
+                const rankClass = idx < 3 ? `rank-${idx+1}` : 'rank-other';
+                const roleClass = `role-${p.role}`;
+                
+                // Alle Tiers sammeln
+                const allTiers = item.entries.map(e => ({mode: e.gamemode, tier: e.tier, points: e.points}));
+                
+                return `
+                    <tr>
+                        <td><span class="rank ${rankClass}">${idx+1}</span></td>
+                        <td>
+                            <div class="player-name">
+                                ${p.display_name}
+                                ${p.is_cheater ? '<span style="color:var(--danger); font-size:0.8rem;">[Cheater]</span>' : ''}
+                            </div>
+                        </td>
+                        <td>${p.region}</td>
+                        <td>
+                            <strong>${bestEntry.gamemode}</strong>
+                            ${showExpandedView && allTiers.length > 1 ? 
+                                `<div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px;">
+                                    +${allTiers.length-1} weitere Modi
+                                </div>` : ''}
+                        </td>
+                        <td><strong>${bestEntry.points}</strong></td>
+                        <td>
+                            ${showExpandedView ? `
+                                <div class="tier-grid expanded">
+                                    ${allTiers.map(t => `
+                                        <span class="tier ${t.tier.includes('HP')?'hp':'lp'}" title="${t.mode}: ${t.points} Pkt">
+                                            ${t.tier}
+                                        </span>
+                                    `).join('')}
+                                </div>
+                            ` : `
+                                <span class="tier ${bestEntry.tier.includes('HP')?'hp':'lp'}">${bestEntry.tier}</span>
+                            `}
+                        </td>
+                        <td><span class="player-role ${roleClass}">${p.role}</span></td>
+                    </tr>
+                `;
+            }).join('');
+
+        } catch(err) {
+            console.error('Load error:', err);
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:var(--danger); padding:2rem;">Fehler: ${err.message}</td></tr>`;
+        }
+    }
+
+    // ===== ADMIN =====
+    function showAdminMsg(text, isError) {
+        const msg = document.getElementById('adminMsg');
+        msg.className = 'status-msg ' + (isError ? 'error' : 'success');
+        msg.style.display = 'block';
+        msg.textContent = text;
+        setTimeout(() => { msg.style.display = 'none'; }, 3000);
+    }
+
+    async function savePlayer() {
+        const name = document.getElementById('admName').value.trim();
+        const region = document.getElementById('admRegion').value;
+        const mode = document.getElementById('admMode').value;
+        const points = parseInt(document.getElementById('admPoints').value) || 0;
+        const tier = document.getElementById('admTier').value;
+        const role = document.getElementById('admRole').value;
+
+        if(!name) { showAdminMsg('Name ist erforderlich', true); return; }
+
+        try {
+            // Player suchen oder erstellen
+            let { data: player } = await supabase
+                .from('players')
+                .select('id')
+                .eq('username', name)
+                .single();
+
+            if(!player) {
+                const { data: newP, error: insErr } = await supabase
+                    .from('players')
+                    .insert([{ username: name, display_name: name, region, role }])
+                    .select()
+                    .single();
+                if(insErr) throw insErr;
+                player = newP;
+            } else {
+                await supabase.from('players').update({ region, role }).eq('id', player.id);
+            }
+
+            // Leaderboard upsert
+            await supabase.from('leaderboard').upsert({
+                player_id: player.id,
+                gamemode: mode,
+                points,
+                tier
+            }, { onConflict: 'player_id,gamemode' });
+
+            showAdminMsg('Gespeichert!', false);
+            loadLeaderboard();
+            loadPlayerList();
+
+        } catch(err) {
+            console.error('Save error:', err);
+            showAdminMsg(err.message || 'Speichern fehlgeschlagen', true);
+        }
+    }
+
+    async function loadPlayerList() {
+        const list = document.getElementById('playerList');
+        try {
+            const { data } = await supabase.from('players').select('username, role').order('username');
+            list.innerHTML = (data||[]).map(p => 
+                `<div style="padding:6px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between;">
+                    <span>${p.username}</span>
+                    <span class="player-role role-${p.role}">${p.role}</span>
+                </div>`
+            ).join('') || '<div style="color:var(--text-muted);">Keine Spieler</div>';
+        } catch(err) {
+            list.innerHTML = '<div style="color:var(--danger);">Fehler beim Laden</div>';
+        }
     }
 
     async function changePassword() {
-        const newPass = document.getElementById('new-pass').value;
-        if(!newPass) return;
-        await supabase.auth.updateUser({ password: newPass });
-        alert('Passwort geändert!');
+        const pass = document.getElementById('newPass').value;
+        if(!pass || pass.length < 6) {
+            showAdminMsg('Passwort muss mind. 6 Zeichen haben', true);
+            return;
+        }
+        try {
+            await supabase.auth.updateUser({ password: pass });
+            showAdminMsg('Passwort geändert!', false);
+            document.getElementById('newPass').value = '';
+        } catch(err) {
+            showAdminMsg(err.message || 'Fehler', true);
+        }
     }
-
-    // Initial Load
-    loadLeaderboard();
 </script>
 
 </body>
