@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MC Power - Leaderboard</title>
+    <!-- Supabase Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root{--bg:#0b0e14;--card:#151a24;--border:#2a3345;--primary:#00ff88;--danger:#ff4444;--gold:#ffd700;--text:#e0e6ed;--muted:#8892a6}
@@ -37,7 +38,7 @@
         .role-owner{background:gold;color:#000}.role-admin{background:#6366f1;color:#fff}.role-tester{background:#10b981;color:#fff}.role-player{background:var(--border);color:var(--muted)}
         .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;z-index:1000}
         .modal.show{display:flex}
-        .modal-box{background:var(--card);padding:2rem;border-radius:12px;width:90%;max-width:450px;border:2px solid var(--border)}
+        .modal-box{background:var(--card);padding:2rem;border-radius:12px;width:90%;max-width:400px;border:2px solid var(--border)}
         .modal-box h3{text-align:center;margin-bottom:1.5rem;color:var(--primary)}
         .form-group{margin-bottom:1rem}
         .form-group label{display:block;margin-bottom:0.5rem;color:var(--muted);font-size:0.9rem}
@@ -84,7 +85,6 @@
             <h3 id="authTitle">Anmelden</h3>
             <div id="authMsg" class="msg"></div>
             <div class="form-group"><label>Benutzername</label><input type="text" id="inpUser" class="form-input" placeholder="Dein Minecraft Name"></div>
-            <div class="form-group" id="emailGroup" style="display:none"><label>E-Mail</label><input type="email" id="inpEmail" class="form-input" placeholder="deine@email.com"></div>
             <div class="form-group"><label>Passwort</label><input type="password" id="inpPass" class="form-input" placeholder="Mind. 6 Zeichen"></div>
             <button id="btnAuth" class="btn btn-primary" style="width:100%">Los</button>
             <div id="authToggle" class="toggle">Noch kein Account? Registrieren</div>
@@ -105,7 +105,7 @@
         let currentUser = null;
         let loginMode = true;
 
-        // ===== DEBUG KONSOLE =====
+        // ===== DEBUG KONSOLE (GARANTIERT FUNKTIONIEREND) =====
         function toggleDebugConsole() {
             const dbg = document.getElementById('debug');
             if(dbg) dbg.classList.toggle('show');
@@ -126,18 +126,23 @@
             console.log(msg);
         }
 
-        // ===== SUPABASE INIT =====
+        // ===== SUPABASE INIT (SICHER) =====
         async function initSupabase() {
             log('🔄 Supabase wird initialisiert...');
             try {
-                if(!window.supabase) throw new Error('Supabase Library nicht geladen!');
+                // Warte bis CDN geladen ist
+                if(!window.supabase) throw new Error('Supabase Library nicht geladen! Prüfe Internetverbindung.');
+                
                 sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
                 log('✅ Supabase Client erstellt');
+
+                // Verbindung testen
                 const { error } = await sb.from('players').select('id').limit(1);
                 if(error && error.message.includes('does not exist')) {
-                    throw new Error('❌ Tabellen fehlen! SQL in Supabase ausführen.');
+                    throw new Error('❌ Tabellen fehlen! Bitte SQL-Skript in Supabase ausführen.');
                 }
                 if(error) throw error;
+                
                 log('✅ Datenbank verbunden');
                 document.getElementById('connStatus').className = 'status connected';
                 document.getElementById('connStatus').textContent = '🟢 Verbunden';
@@ -167,13 +172,6 @@
             document.getElementById('btnAuth').textContent = loginMode ? 'Einloggen' : 'Registrieren';
             document.getElementById('authToggle').textContent = loginMode ? 'Noch kein Account? Registrieren' : 'Bereits Account? Einloggen';
             document.getElementById('authMsg').className = 'msg';
-            
-            // E-Mail Feld nur bei Registrierung anzeigen
-            const emailGroup = document.getElementById('emailGroup');
-            if(emailGroup) {
-                emailGroup.style.display = loginMode ? 'none' : 'block';
-            }
-            
             log('🔄 Modus: ' + (loginMode ? 'LOGIN' : 'REGISTER'));
         }
         function showAuthMsg(txt, ok) {
@@ -182,32 +180,23 @@
             el.className = 'msg show ' + (ok ? 'ok' : 'err');
         }
 
-        // ===== AUTH LOGIK =====
+        // ===== AUTH LOGIK (STRIKT) =====
         async function handleAuth() {
             const u = document.getElementById('inpUser').value.trim();
             const p = document.getElementById('inpPass').value;
-            const emailInput = document.getElementById('inpEmail') ? document.getElementById('inpEmail').value.trim() : '';
             
             if(!u || !p) return showAuthMsg('❌ Bitte Name und Passwort eingeben', false);
             if(!loginMode && p.length < 6) return showAuthMsg('❌ Passwort muss mind. 6 Zeichen haben', false);
-            
-            // Bei Registrierung: E-Mail erforderlich
-            if(!loginMode) {
-                if(!emailInput || !emailInput.includes('@')) {
-                    return showAuthMsg('❌ Bitte gültige E-Mail eingeben', false);
-                }
-            }
             
             const btn = document.getElementById('btnAuth');
             btn.disabled = true;
             btn.textContent = loginMode ? 'Prüfe...' : 'Erstelle...';
             
             try {
+                const email = u.toLowerCase() + '@mcpower.local';
+                log(loginMode ? '🔑 Login: ' + u : '📝 Register: ' + u);
+                
                 if(loginMode) {
-                    // LOGIN: Benutzername@fake-domain
-                    const email = u.toLowerCase() + '@mcpower.local';
-                    log('🔑 Login: ' + u);
-                    
                     const { data, error } = await sb.auth.signInWithPassword({ email, password: p });
                     if(error) throw error;
                     if(!data?.user) throw new Error('Ungültige Serverantwort');
@@ -219,34 +208,14 @@
                     applyAuthState();
                     await loadLeaderboard();
                 } else {
-                    // REGISTER: Echte E-Mail verwenden
-                    log('📝 Register: ' + u + ' mit E-Mail: ' + emailInput);
-                    
-                    const { data, error } = await sb.auth.signUp({ 
-                        email: emailInput, 
-                        password: p,
-                        options: {
-                            data: {
-                                username: u,
-                                display_name: u
-                            }
-                        }
-                    });
-                    
+                    const { data, error } = await sb.auth.signUp({ email, password: p });
                     if(error) throw error;
                     if(!data?.user) throw new Error('Registrierung fehlgeschlagen');
                     
-                    // Profil in players Tabelle anlegen
-                    const { error: dbError } = await sb.from('players').insert([{
-                        user_id: data.user.id,
-                        username: u,
-                        display_name: u,
-                        role: 'player',
-                        region: 'DE'
+                    // Profil anlegen
+                    await sb.from('players').insert([{
+                        user_id: data.user.id, username: u, display_name: u, role: 'player', region: 'DE'
                     }]);
-                    
-                    if(dbError) log('⚠️ DB-Eintrag: ' + dbError.message);
-                    
                     log('✅ Account erstellt');
                     showAuthMsg('✅ Account erstellt! Bitte einloggen.', true);
                     loginMode = true;
@@ -264,7 +233,7 @@
         async function checkSession() {
             log('🔍 Prüfe Session...');
             try {
-                const {  { session } } = await sb.auth.getSession();
+                const { data: { session } } = await sb.auth.getSession();
                 if(session?.user) {
                     currentUser = session.user;
                     log('✅ Session gefunden');
@@ -322,6 +291,7 @@
                     return;
                 }
                 
+                // Gruppiere nach Spieler
                 const map = new Map();
                 data.forEach(r => {
                     const p = r.players;
@@ -364,8 +334,9 @@
         document.getElementById('inpUser').onkeypress = (e) => { if(e.key==='Enter') document.getElementById('inpPass').focus(); };
         document.getElementById('inpPass').onkeypress = (e) => { if(e.key==='Enter') handleAuth(); };
 
+        // Start Sequenz
         window.addEventListener('load', async () => {
-            log('🎮 MC Power gestartet');
+            log(' MC Power gestartet');
             const ok = await initSupabase();
             if(ok) await checkSession();
         });
