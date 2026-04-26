@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MC Power - Leaderboard</title>
+    <!-- Supabase Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root{--bg:#0b0e14;--card:#151a24;--border:#2a3345;--primary:#00ff88;--danger:#ff4444;--gold:#ffd700;--text:#e0e6ed;--muted:#8892a6}
@@ -12,7 +13,7 @@
         header{background:var(--card);padding:1rem 2rem;border-bottom:2px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
         .logo{font-size:1.5rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:2px}
         .btn{background:transparent;border:2px solid var(--border);color:var(--text);padding:0.5rem 1.25rem;cursor:pointer;border-radius:6px;font-weight:600;transition:0.3s;margin-left:0.5rem}
-        .btn:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.3)}
+        .btn:hover{transform:translateY(-2px)}
         .btn-primary{background:var(--primary);color:#000;border-color:var(--primary)}
         .btn-danger{background:var(--danger);color:#fff;border-color:var(--danger)}
         .container{max-width:1200px;margin:0 auto;padding:2rem}
@@ -20,16 +21,11 @@
         .status.connecting{background:rgba(255,165,0,0.2);color:orange}
         .status.connected{background:rgba(0,255,136,0.2);color:var(--primary)}
         .status.error{background:rgba(255,68,68,0.2);color:var(--danger)}
-        .banner{padding:1rem;border-radius:8px;margin-bottom:1rem;display:none}
-        .banner.show{display:block}
-        .banner.err{background:rgba(255,68,68,0.2);border:2px solid var(--danger);color:#fca5a5}
-        .banner.ok{background:rgba(0,255,136,0.2);border:2px solid var(--primary);color:#6ee7b7}
-        .gate{text-align:center;padding:4rem 2rem;background:var(--card);border-radius:12px;border:2px solid var(--border)}
+        .gate{text-align:center;padding:4rem 2rem;background:var(--card);border-radius:12px;border:2px solid var(--border);margin-top:2rem}
         .gate h2{margin-bottom:1rem;color:var(--primary)}
-        .gate p{color:var(--muted);margin-bottom:1.5rem}
-        .table-box{background:var(--card);border-radius:10px;overflow:hidden;border:2px solid var(--border);display:none}
+        .table-box{background:var(--card);border-radius:10px;overflow:hidden;border:2px solid var(--border);margin-top:2rem;display:none}
         table{width:100%;border-collapse:collapse}
-        th{background:#1a2233;color:var(--primary);padding:1rem;text-align:left;text-transform:uppercase;font-size:0.8rem;letter-spacing:1px}
+        th{background:#1a2233;color:var(--primary);padding:1rem;text-align:left;text-transform:uppercase;font-size:0.8rem}
         td{padding:1rem;border-bottom:1px solid var(--border)}
         tr:hover{background:#1f2738}
         .rank{display:inline-flex;align-items:center;justify-content:center;width:35px;height:35px;border-radius:6px;font-weight:700}
@@ -56,7 +52,6 @@
         #toggleDebug{position:fixed;bottom:10px;right:10px;background:var(--card);border:2px solid var(--border);color:var(--muted);padding:6px 10px;cursor:pointer;border-radius:6px;z-index:2001;font-size:11px}
         .loading{text-align:center;padding:2rem;color:var(--muted)}
         .hidden{display:none!important}
-        @media(max-width:768px){.container{padding:1rem}th,td{padding:0.75rem 0.5rem;font-size:0.9rem}header{flex-direction:column;gap:1rem}}
     </style>
 </head>
 <body>
@@ -69,16 +64,13 @@
     </header>
     <div class="container">
         <div id="connStatus" class="status connecting">Verbinde...</div>
-        <div id="banner" class="banner"></div>
         
-        <!-- AUTH GATE (zeigt sich nur wenn NICHT eingeloggt) -->
         <div id="authGate" class="gate">
             <h2>🔒 Zugang geschützt</h2>
-            <p>Melde dich an oder registriere dich, um das Leaderboard zu sehen.</p>
+            <p style="color:var(--muted);margin-bottom:1.5rem">Melde dich an oder registriere dich, um das Leaderboard zu sehen.</p>
             <button class="btn btn-primary" onclick="openAuth()">Jetzt anmelden</button>
         </div>
 
-        <!-- LEADERBOARD (zeigt sich nur wenn EINGELOGGT) -->
         <div id="lbContainer" class="table-box">
             <h2 style="padding:1rem;border-bottom:1px solid var(--border)">🏆 Leaderboard</h2>
             <table>
@@ -88,7 +80,6 @@
         </div>
     </div>
 
-    <!-- AUTH MODAL -->
     <div id="authModal" class="modal">
         <div class="modal-box">
             <h3 id="authTitle">Anmelden</h3>
@@ -101,191 +92,223 @@
         </div>
     </div>
 
-    <button id="toggleDebug">🐛 Debug [D]</button>
+    <button id="toggleDebug" onclick="toggleDebugConsole()">🐛 Debug [D]</button>
     <div id="debug"></div>
 
     <script>
-        // ===== KONFIG =====
-        const CFG = { 
-            url:'https://yqgtlfbykubjizqghiat.supabase.co', 
-            key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3RsZmJ5a3Viaml6cWdoaWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDQ0NzIsImV4cCI6MjA5MjcyMDQ3Mn0.qY9zREp-l_dpKJT1fnX6tiYKdsUwv0QNLezbUTkwTho' 
-        };
-        const sb = supabase.createClient(CFG.url, CFG.key);
+        // ===== KONFIGURATION =====
+        const SUPABASE_URL = 'https://yqgtlfbykubjizqghiat.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3RsZmJ5a3Viaml6cWdoaWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDQ0NzIsImV4cCI6MjA5MjcyMDQ3Mn0.qY9zREp-l_dpKJT1fnX6tiYKdsUwv0QNLezbUTkwTho';
         
-        // Strikter State
+        // ===== GLOBALE VARIABLEN =====
+        let sb = null;
         let currentUser = null;
-        let userRole = 'guest';
         let loginMode = true;
-        let isAuthReady = false;
 
-        // ===== LOGGING & UI =====
-        function log(t){ console.log(t); const d=document.getElementById('debug'); if(d){ d.innerHTML+=`<div>[${new Date().toLocaleTimeString()}] ${t}</div>`; d.scrollTop=d.scrollHeight; } }
-        function banner(txt,ok){ const b=document.getElementById('banner'); b.textContent=txt; b.className='banner show '+(ok?'ok':'err'); setTimeout(()=>b.classList.remove('show'),4000); }
-        function connStat(s,t){ document.getElementById('connStatus').className='status '+s; document.getElementById('connStatus').textContent=t; }
-        function authMsg(txt,ok){ const el=document.getElementById('authMsg'); el.textContent=txt; el.className='msg show '+(ok?'ok':'err'); }
-        
-        function showGate(show){
-            document.getElementById('authGate').style.display = show ? 'block' : 'none';
-            document.getElementById('lbContainer').style.display = show ? 'none' : 'block';
+        // ===== DEBUG KONSOLE (GARANTIERT FUNKTIONIEREND) =====
+        function toggleDebugConsole() {
+            const dbg = document.getElementById('debug');
+            if(dbg) dbg.classList.toggle('show');
+        }
+        document.addEventListener('keydown', (e) => {
+            if(e.key.toLowerCase() === 'd' && e.target.tagName !== 'INPUT') {
+                e.preventDefault();
+                toggleDebugConsole();
+            }
+        });
+        function log(msg) {
+            const dbg = document.getElementById('debug');
+            if(dbg) {
+                const time = new Date().toLocaleTimeString();
+                dbg.innerHTML += `<div>[${time}] ${msg}</div>`;
+                dbg.scrollTop = dbg.scrollHeight;
+            }
+            console.log(msg);
         }
 
-        // ===== AUTH LOGIC (STRIKT) =====
-        function openAuth(){ document.getElementById('authModal').classList.add('show'); document.getElementById('authMsg').className='msg'; document.getElementById('inpUser').focus(); }
-        function closeAuth(){ document.getElementById('authModal').classList.remove('show'); }
-        function toggleAuth(){ 
-            loginMode=!loginMode; 
-            document.getElementById('authTitle').textContent=loginMode?'Anmelden':'Registrieren'; 
-            document.getElementById('btnAuth').textContent=loginMode?'Einloggen':'Registrieren'; 
-            document.getElementById('authToggle').textContent=loginMode?'Noch kein Account? Registrieren':'Bereits Account? Einloggen'; 
-            document.getElementById('authMsg').className='msg'; 
-        }
-
-        async function handleAuth(){
-            const u=document.getElementById('inpUser').value.trim();
-            const p=document.getElementById('inpPass').value;
-            if(!u||!p) return authMsg('❌ Bitte Name und Passwort eingeben',false);
-            if(!loginMode && p.length<6) return authMsg('❌ Passwort muss mind. 6 Zeichen haben',false);
-            
-            const btn=document.getElementById('btnAuth');
-            btn.disabled=true;
-            btn.textContent=loginMode?'Prüfe...':'Erstelle...';
-            
-            try{
-                const email=u.toLowerCase()+'@mcpower.local';
+        // ===== SUPABASE INIT (SICHER) =====
+        async function initSupabase() {
+            log('🔄 Supabase wird initialisiert...');
+            try {
+                // Warte bis CDN geladen ist
+                if(!window.supabase) throw new Error('Supabase Library nicht geladen! Prüfe Internetverbindung.');
                 
-                if(loginMode){
-                    // === LOGIN ===
-                    log('Versuche Login für: '+u);
-                    const { data, error } = await sb.auth.signInWithPassword({ email, password: p });
-                    
-                    // STRIKTE PRÜFUNG: Wenn Fehler, sofort abbrechen
-                    if(error) throw error;
-                    if(!data || !data.user) throw new Error('Ungültige Antwort vom Server');
-                    
-                    // Erfolgreich
-                    currentUser = data.user;
-                    log('✅ Login erfolgreich: '+currentUser.id);
-                    await loadUserRole();
-                    applyAuthState();
-                    authMsg('✅ Erfolgreich eingeloggt!',true);
-                    setTimeout(closeAuth, 800);
-                    await loadLeaderboard();
-                    
-                } else {
-                    // === REGISTER ===
-                    log('Versuche Registrierung für: '+u);
-                    const { data, error } = await sb.auth.signUp({ email, password: p });
-                    
-                    if(error) throw error;
-                    if(!data || !data.user) throw new Error('Registrierung fehlgeschlagen');
-                    
-                    // User in DB anlegen
-                    const { error: dbErr } = await sb.from('players').insert([
-                        { user_id: data.user.id, username: u, display_name: u, role: 'player', region: 'DE' }
-                    ]);
-                    if(dbErr) log('⚠️ DB-Eintrag fehlgeschlagen (User ist aber erstellt): '+dbErr.message);
-                    
-                    authMsg('✅ Account erstellt! Bitte jetzt einloggen.',true);
-                    loginMode = true;
-                    toggleAuth();
+                sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                log('✅ Supabase Client erstellt');
+
+                // Verbindung testen
+                const { error } = await sb.from('players').select('id').limit(1);
+                if(error && error.message.includes('does not exist')) {
+                    throw new Error('❌ Tabellen fehlen! Bitte SQL-Skript in Supabase ausführen.');
                 }
-            } catch(err){
-                log('❌ Auth Fehler: '+err.message);
-                authMsg('❌ '+err.message, false);
-            } finally {
-                btn.disabled=false;
-                btn.textContent=loginMode?'Einloggen':'Registrieren';
-            }
-        }
-
-        async function loadUserRole(){
-            try{
-                const { data, error } = await sb.from('players').select('role').eq('user_id', currentUser.id).single();
                 if(error) throw error;
-                userRole = data?.role || 'player';
-                log('👤 Rolle geladen: '+userRole);
-            } catch(e){
-                userRole = 'player';
-                log('⚠️ Rolle nicht gefunden, setze auf player');
+                
+                log('✅ Datenbank verbunden');
+                document.getElementById('connStatus').className = 'status connected';
+                document.getElementById('connStatus').textContent = '🟢 Verbunden';
+                return true;
+            } catch(err) {
+                log('❌ ' + err.message);
+                document.getElementById('connStatus').className = 'status error';
+                document.getElementById('connStatus').textContent = '🔴 Fehler';
+                return false;
             }
         }
 
-        function applyAuthState(){
-            if(currentUser){
+        // ===== AUTH UI =====
+        function openAuth() { 
+            document.getElementById('authModal').classList.add('show'); 
+            document.getElementById('authMsg').className = 'msg';
+            document.getElementById('inpUser').focus();
+            log('🔐 Login Modal geöffnet');
+        }
+        function closeAuth() { 
+            document.getElementById('authModal').classList.remove('show'); 
+            log('🔐 Login Modal geschlossen');
+        }
+        function toggleAuthMode() {
+            loginMode = !loginMode;
+            document.getElementById('authTitle').textContent = loginMode ? 'Anmelden' : 'Registrieren';
+            document.getElementById('btnAuth').textContent = loginMode ? 'Einloggen' : 'Registrieren';
+            document.getElementById('authToggle').textContent = loginMode ? 'Noch kein Account? Registrieren' : 'Bereits Account? Einloggen';
+            document.getElementById('authMsg').className = 'msg';
+            log('🔄 Modus: ' + (loginMode ? 'LOGIN' : 'REGISTER'));
+        }
+        function showAuthMsg(txt, ok) {
+            const el = document.getElementById('authMsg');
+            el.textContent = txt;
+            el.className = 'msg show ' + (ok ? 'ok' : 'err');
+        }
+
+        // ===== AUTH LOGIK (STRIKT) =====
+        async function handleAuth() {
+            const u = document.getElementById('inpUser').value.trim();
+            const p = document.getElementById('inpPass').value;
+            
+            if(!u || !p) return showAuthMsg('❌ Bitte Name und Passwort eingeben', false);
+            if(!loginMode && p.length < 6) return showAuthMsg('❌ Passwort muss mind. 6 Zeichen haben', false);
+            
+            const btn = document.getElementById('btnAuth');
+            btn.disabled = true;
+            btn.textContent = loginMode ? 'Prüfe...' : 'Erstelle...';
+            
+            try {
+                const email = u.toLowerCase() + '@mcpower.local';
+                log(loginMode ? '🔑 Login: ' + u : '📝 Register: ' + u);
+                
+                if(loginMode) {
+                    const { data, error } = await sb.auth.signInWithPassword({ email, password: p });
+                    if(error) throw error;
+                    if(!data?.user) throw new Error('Ungültige Serverantwort');
+                    
+                    currentUser = data.user;
+                    log('✅ Login erfolgreich');
+                    showAuthMsg('✅ Erfolgreich!', true);
+                    setTimeout(closeAuth, 800);
+                    applyAuthState();
+                    await loadLeaderboard();
+                } else {
+                    const { data, error } = await sb.auth.signUp({ email, password: p });
+                    if(error) throw error;
+                    if(!data?.user) throw new Error('Registrierung fehlgeschlagen');
+                    
+                    // Profil anlegen
+                    await sb.from('players').insert([{
+                        user_id: data.user.id, username: u, display_name: u, role: 'player', region: 'DE'
+                    }]);
+                    log('✅ Account erstellt');
+                    showAuthMsg('✅ Account erstellt! Bitte einloggen.', true);
+                    loginMode = true;
+                    toggleAuthMode();
+                }
+            } catch(err) {
+                log('❌ Auth Fehler: ' + err.message);
+                showAuthMsg('❌ ' + err.message, false);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = loginMode ? 'Einloggen' : 'Registrieren';
+            }
+        }
+
+        async function checkSession() {
+            log('🔍 Prüfe Session...');
+            try {
+                const { data: { session } } = await sb.auth.getSession();
+                if(session?.user) {
+                    currentUser = session.user;
+                    log('✅ Session gefunden');
+                    applyAuthState();
+                    await loadLeaderboard();
+                } else {
+                    log('ℹ️ Keine Session');
+                    applyAuthState();
+                }
+            } catch(err) {
+                log('⚠️ Session-Check: ' + err.message);
+                applyAuthState();
+            }
+        }
+
+        function applyAuthState() {
+            if(currentUser) {
                 document.getElementById('btnLogin').classList.add('hidden');
                 document.getElementById('btnLogout').classList.remove('hidden');
-                showGate(false);
+                document.getElementById('authGate').style.display = 'none';
+                document.getElementById('lbContainer').style.display = 'block';
             } else {
                 document.getElementById('btnLogin').classList.remove('hidden');
                 document.getElementById('btnLogout').classList.add('hidden');
-                showGate(true);
+                document.getElementById('authGate').style.display = 'block';
+                document.getElementById('lbContainer').style.display = 'none';
             }
         }
 
-        async function checkSession(){
-            log('🔍 Prüfe Session...');
-            try{
-                const {  { session } } = await sb.auth.getSession();
-                if(session && session.user){
-                    currentUser = session.user;
-                    await loadUserRole();
-                    applyAuthState();
-                    log('✅ Session wiederhergestellt');
-                    await loadLeaderboard();
-                } else {
-                    log('ℹ️ Keine aktive Session');
-                    applyAuthState();
-                }
-            } catch(err){
-                log('❌ Session-Check Fehler: '+err.message);
-                applyAuthState();
-            }
-            isAuthReady = true;
-        }
-
-        async function doLogout(){
+        async function doLogout() {
             log('🚪 Logout...');
             await sb.auth.signOut();
             currentUser = null;
-            userRole = 'guest';
             applyAuthState();
-            document.getElementById('lbBody').innerHTML='<tr><td colspan="7" class="loading">Bitte anmelden</td></tr>';
-            banner('Erfolgreich abgemeldet',true);
+            document.getElementById('lbBody').innerHTML = '<tr><td colspan="7" class="loading">Bitte anmelden</td></tr>';
         }
 
         // ===== LEADERBOARD =====
-        async function loadLeaderboard(){
-            if(!currentUser){ log('⛔ LB Load blocked: nicht eingeloggt'); return; }
+        async function loadLeaderboard() {
+            if(!currentUser) { log('⛔ LB Blockiert: Nicht eingeloggt'); return; }
             log('📊 Lade Leaderboard...');
-            const tb=document.getElementById('lbBody');
-            tb.innerHTML='<tr><td colspan="7" class="loading">Lade...</td></tr>';
+            const tb = document.getElementById('lbBody');
+            tb.innerHTML = '<tr><td colspan="7" class="loading">Lade...</td></tr>';
             
-            try{
+            try {
                 const { data, error } = await sb.from('leaderboard')
                     .select('*, players(username, display_name, region, role, is_banned)')
                     .order('points', { ascending: false })
                     .limit(100);
                 
                 if(error) throw error;
-                tb.innerHTML='';
-                if(!data||!data.length){ tb.innerHTML='<tr><td colspan="7" class="loading">Keine Spieler eingetragen</td></tr>'; return; }
+                tb.innerHTML = '';
+                if(!data || data.length === 0) {
+                    tb.innerHTML = '<tr><td colspan="7" class="loading">Keine Spieler eingetragen</td></tr>';
+                    return;
+                }
                 
-                // Gruppiere nach Spieler (bestes Ergebnis pro User)
-                const map=new Map();
-                data.forEach(r=>{
-                    const p=r.players;
-                    if(!p||p.is_banned) return;
-                    if(!map.has(p.id)) map.set(p.id,{p,entries:[]});
+                // Gruppiere nach Spieler
+                const map = new Map();
+                data.forEach(r => {
+                    const p = r.players;
+                    if(!p || p.is_banned) return;
+                    if(!map.has(p.id)) map.set(p.id, {p, entries:[]});
                     map.get(p.id).entries.push(r);
                 });
                 
-                const sorted=Array.from(map.values()).sort((a,b)=>Math.max(...b.entries.map(e=>e.points))-Math.max(...a.entries.map(e=>e.points)));
+                const sorted = Array.from(map.values()).sort((a,b) => Math.max(...b.entries.map(e=>e.points)) - Math.max(...a.entries.map(e=>e.points)));
                 
-                sorted.forEach((it,idx)=>{
-                    const p=it.p, best=it.entries.reduce((m,e)=>e.points>m.points?e:m);
-                    const rc=idx<1?'r1':idx<2?'r2':idx<3?'r3':'rother';
-                    const tc=best.tier.includes('HP')?'hp':'lp', tc1=best.tier==='HP1'?'hp1':'';
-                    tb.innerHTML+=`<tr>
+                sorted.forEach((it, idx) => {
+                    const p = it.p;
+                    const best = it.entries.reduce((m,e) => e.points > m.points ? e : m);
+                    const rc = idx < 1 ? 'r1' : idx < 2 ? 'r2' : idx < 3 ? 'r3' : 'rother';
+                    const tc = best.tier.includes('HP') ? 'hp' : 'lp';
+                    const tc1 = best.tier === 'HP1' ? 'hp1' : '';
+                    tb.innerHTML += `<tr>
                         <td><span class="rank ${rc}">${idx+1}</span></td>
                         <td><strong>${p.display_name||p.username}</strong></td>
                         <td>${p.region||'-'}</td>
@@ -296,39 +319,27 @@
                     </tr>`;
                 });
                 log('✅ '+sorted.length+' Spieler geladen');
-            } catch(err){
-                log('❌ LB Fehler: '+err.message);
-                tb.innerHTML='<tr><td colspan="7" class="loading" style="color:var(--danger)">Fehler: '+err.message+'</td></tr>';
+            } catch(err) {
+                log('❌ LB Fehler: ' + err.message);
+                tb.innerHTML = '<tr><td colspan="7" class="loading" style="color:var(--danger)">Fehler: ' + err.message + '</td></tr>';
             }
         }
 
-        // ===== INIT & EVENTS =====
-        async function init(){
-            log('🎮 MC Power startet...');
-            try{
-                const {error}=await sb.from('players').select('count',{count:'exact',head:true});
-                if(error&&error.message.includes('does not exist')) throw new Error('Tabellen fehlen! SQL in Supabase ausführen');
-                if(error) throw error;
-                connStat('connected','🟢 Verbunden');
-                await checkSession();
-            } catch(err){
-                log('❌ Init Fehler: '+err.message);
-                connStat('error','🔴 Fehler');
-                banner('DB Fehler: '+err.message,false);
-            }
-        }
+        // ===== EVENTS & START =====
+        document.getElementById('btnLogin').onclick = openAuth;
+        document.getElementById('btnLogout').onclick = doLogout;
+        document.getElementById('btnAuth').onclick = handleAuth;
+        document.getElementById('authToggle').onclick = toggleAuthMode;
+        document.getElementById('authModal').onclick = (e) => { if(e.target.id === 'authModal') closeAuth(); };
+        document.getElementById('inpUser').onkeypress = (e) => { if(e.key==='Enter') document.getElementById('inpPass').focus(); };
+        document.getElementById('inpPass').onkeypress = (e) => { if(e.key==='Enter') handleAuth(); };
 
-        document.getElementById('btnLogin').onclick=openAuth;
-        document.getElementById('btnLogout').onclick=doLogout;
-        document.getElementById('btnAuth').onclick=handleAuth;
-        document.getElementById('authToggle').onclick=toggleAuth;
-        document.getElementById('inpUser').onkeypress=e=>{if(e.key==='Enter')document.getElementById('inpPass').focus();};
-        document.getElementById('inpPass').onkeypress=e=>{if(e.key==='Enter')handleAuth();};
-        document.getElementById('authModal').onclick=e=>{if(e.target.id==='authModal')closeAuth();};
-        document.getElementById('toggleDebug').onclick=()=>document.getElementById('debug').classList.toggle('show');
-        document.onkeydown=e=>{if(e.key.toLowerCase()==='d')document.getElementById('debug').classList.toggle('show'); if(e.key==='Escape')closeAuth();};
-
-        if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+        // Start Sequenz
+        window.addEventListener('load', async () => {
+            log(' MC Power gestartet');
+            const ok = await initSupabase();
+            if(ok) await checkSession();
+        });
     </script>
 </body>
 </html>
