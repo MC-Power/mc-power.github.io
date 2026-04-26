@@ -1,15 +1,15 @@
-// leaderboard.js
+// leaderboard.js - REPARIERTE VERSION
 console.log('✅ leaderboard.js geladen');
 
 window.loadLeaderboard = async function() {
-    console.log('[LB] Lade Leaderboard (öffentlich)...');
-    const tbody = document.getElementById('lbBody');
-    const countEl = document.getElementById('playerCount');
+    console.log('📊 Lade Leaderboard (öffentlich)...');
+    const tb = document.getElementById('lbBody');
+    if (!tb) return;
     
-    if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="loading-cell"><div class="loading-container"><div class="spinner"></div><div class="loading-text">Lade Top 250...</div></div></td></tr>';
-    
+    tb.innerHTML = '<tr><td colspan="7" class="loading">Lade Top 250...</td></tr>';
+
     try {
-        // LIMIT AUF 250 ERHÖHT!
+        // Daten laden
         const { data, error } = await window.supabaseClient
             .from('leaderboard')
             .select(`
@@ -20,66 +20,80 @@ window.loadLeaderboard = async function() {
                     display_name,
                     region,
                     role,
-                    is_cheater,
                     is_banned
                 )
             `)
             .order('points', { ascending: false })
             .limit(250);
-        
-        if(error) throw error;
-        console.log('[LB] ✅', data?.length || 0, 'Einträge geladen');
-        
-        if(!data || data.length === 0) {
-            if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="loading-cell" style="text-align:center">Noch keine Spieler im Leaderboard</td></tr>';
-            if(countEl) countEl.textContent = '0 Spieler';
+
+        if (error) throw error;
+        console.log('📦 Rohdaten geladen:', data?.length || 0);
+
+        if (!data || data.length === 0) {
+            tb.innerHTML = '<tr><td colspan="7" class="loading">Noch keine Spieler im Leaderboard</td></tr>';
             return;
         }
-        
-        // Gruppiere nach Spieler (bestes Ergebnis pro User)
+
+        // 1. Filtere ungültige Einträge (kein Spieler oder gebannt)
+        const validEntries = data.filter(r => r.players && !r.players.is_banned);
+        console.log('✅ Valide Einträge (nicht gebannt):', validEntries.length);
+
+        // 2. Gruppiere nach Spieler - behalte nur den BESTEN Eintrag pro Spieler
         const playerMap = new Map();
-        data.forEach(entry => {
-            const p = entry.players;
-            if(!p || p.is_banned) return;
-            if(!playerMap.has(p.id)) playerMap.set(p.id, { player: p, entries: [] });
-            playerMap.get(p.id).entries.push(entry);
+        validEntries.forEach(r => {
+            const p = r.players;
+            if (!playerMap.has(p.id)) {
+                // Erster Eintrag für diesen Spieler
+                playerMap.set(p.id, { player: p, best: r });
+            } else {
+                // Vergleiche mit bisher bestem Eintrag
+                const currentBest = playerMap.get(p.id).best;
+                if (r.points > currentBest.points) {
+                    playerMap.set(p.id, { player: p, best: r });
+                }
+            }
         });
-        
-        // Sortiere nach besten Punkten
-        const sorted = Array.from(playerMap.values()).sort((a, b) => {
-            const maxA = Math.max(...a.entries.map(e => e.points));
-            const maxB = Math.max(...b.entries.map(e => e.points));
-            return maxB - maxA;
-        });
-        
-        // Render
-        if(tbody) {
-            tbody.innerHTML = sorted.map((item, idx) => {
-                const p = item.player;
-                const best = item.entries.reduce((max, e) => e.points > max.points ? e : max);
-                const rankClass = idx < 3 ? `r${idx+1}` : 'rother';
-                const tierClass = best.tier.includes('HP') ? 'hp' : 'lp';
-                const tierSpecial = best.tier === 'HP1' ? 'hp1' : '';
-                
-                return `
-                    <tr>
-                        <td><span class="rank ${rankClass}">${idx + 1}</span></td>
-                        <td><strong>${p.display_name || p.username}</strong></td>
-                        <td>${p.region || '-'}</td>
-                        <td>${best.gamemode}</td>
-                        <td style="color:var(--primary)">${best.points}</td>
-                        <td><span class="tier ${tierClass} ${tierSpecial}">${best.tier}</span></td>
-                        <td><span class="role role-${p.role}">${p.role}</span></td>
-                    </tr>
-                `;
-            }).join('');
+
+        // 3. In Array umwandeln und sortieren
+        const sorted = Array.from(playerMap.values())
+            .sort((a, b) => b.best.points - a.best.points);
+
+        console.log('🏆 Finale Liste:', sorted.length, 'Spieler');
+
+        // 4. Tabelle rendern
+        if (sorted.length === 0) {
+            tb.innerHTML = '<tr><td colspan="7" class="loading">Keine aktiven Spieler</td></tr>';
+            return;
         }
-        
-        if(countEl) countEl.textContent = `${sorted.length} Spieler`;
-        console.log('[LB] ✅ '+sorted.length+' Spieler gerendert');
-        
-    } catch(err) {
-        console.error('[LB] ❌ Fehler:', err.message);
-        if(tbody) tbody.innerHTML = '<tr><td colspan="7" class="loading-cell" style="color:var(--danger);text-align:center">Fehler: '+err.message+'</td></tr>';
+
+        tb.innerHTML = sorted.map((item, idx) => {
+            const p = item.player;
+            const best = item.best;
+            
+            // Rang-Badge Farbe
+            const rc = idx === 0 ? 'r1' : idx === 1 ? 'r2' : idx === 2 ? 'r3' : 'rother';
+            
+            // Tier Farbe
+            const tc = best.tier.includes('HP') ? 'hp' : 'lp';
+            const tc1 = best.tier === 'HP1' ? 'hp1' : '';
+
+            return `
+                <tr>
+                    <td><span class="rank ${rc}">${idx + 1}</span></td>
+                    <td><strong>${p.display_name || p.username}</strong></td>
+                    <td>${p.region || '-'}</td>
+                    <td>${best.gamemode}</td>
+                    <td style="color:var(--primary)">${best.points}</td>
+                    <td><span class="tier ${tc} ${tc1}">${best.tier}</span></td>
+                    <td><span class="role role-${p.role}">${p.role}</span></td>
+                </tr>
+            `;
+        }).join('');
+
+        console.log('✅ Leaderboard erfolgreich gerendert!');
+
+    } catch (err) {
+        console.error('❌ Leaderboard Fehler:', err);
+        tb.innerHTML = `<tr><td colspan="7" class="loading" style="color:var(--danger)">Fehler: ${err.message}</td></tr>`;
     }
 };
