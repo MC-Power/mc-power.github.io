@@ -4,26 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MC Power - Leaderboard</title>
-    <!-- Supabase Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root{--bg:#0b0e14;--card:#151a24;--border:#2a3345;--primary:#00ff88;--danger:#ff4444;--gold:#ffd700;--text:#e0e6ed;--muted:#8892a6}
+        :root{--bg:#0b0e14;--card:#151a24;--border:#2a3345;--primary:#00ff88;--danger:#ff4444;--gold:#ffd700;--text:#e0e6ed;--muted:#8892a6;--success:#10b981}
         *{box-sizing:border-box;margin:0;padding:0}
         body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
         header{background:var(--card);padding:1rem 2rem;border-bottom:2px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:100}
         .logo{font-size:1.5rem;font-weight:800;color:var(--primary);text-transform:uppercase;letter-spacing:2px}
         .btn{background:transparent;border:2px solid var(--border);color:var(--text);padding:0.5rem 1.25rem;cursor:pointer;border-radius:6px;font-weight:600;transition:0.3s;margin-left:0.5rem}
-        .btn:hover{transform:translateY(-2px)}
-        .btn-primary{background:var(--primary);color:#000;border-color:var(--primary)}
-        .btn-danger{background:var(--danger);color:#fff;border-color:var(--danger)}
-        .container{max-width:1200px;margin:0 auto;padding:2rem}
+        .btn:hover{transform:translateY(-2px)}.btn-primary{background:var(--primary);color:#000;border-color:var(--primary)}.btn-danger{background:var(--danger);color:#fff;border-color:var(--danger)}.btn-success{background:var(--success);color:#000;border-color:var(--success)}
+        .container{max-width:1400px;margin:0 auto;padding:2rem}
         .status{padding:0.5rem 1rem;border-radius:6px;margin-bottom:1rem;display:inline-block;font-weight:600}
-        .status.connecting{background:rgba(255,165,0,0.2);color:orange}
-        .status.connected{background:rgba(0,255,136,0.2);color:var(--primary)}
-        .status.error{background:rgba(255,68,68,0.2);color:var(--danger)}
+        .status.connecting{background:rgba(255,165,0,0.2);color:orange}.status.connected{background:rgba(0,255,136,0.2);color:var(--primary)}.status.error{background:rgba(255,68,68,0.2);color:var(--danger)}
         .gate{text-align:center;padding:4rem 2rem;background:var(--card);border-radius:12px;border:2px solid var(--border);margin-top:2rem}
         .gate h2{margin-bottom:1rem;color:var(--primary)}
-        .table-box{background:var(--card);border-radius:10px;overflow:hidden;border:2px solid var(--border);margin-top:2rem;display:none}
+        .table-box{background:var(--card);border-radius:10px;overflow:hidden;border:2px solid var(--border);margin-top:2rem}
         table{width:100%;border-collapse:collapse}
         th{background:#1a2233;color:var(--primary);padding:1rem;text-align:left;text-transform:uppercase;font-size:0.8rem}
         td{padding:1rem;border-bottom:1px solid var(--border)}
@@ -31,27 +26,40 @@
         .rank{display:inline-flex;align-items:center;justify-content:center;width:35px;height:35px;border-radius:6px;font-weight:700}
         .r1{background:gold;color:#000}.r2{background:silver;color:#000}.r3{background:#cd7f32;color:#000}.rother{background:var(--border)}
         .tier{padding:4px 10px;border-radius:5px;font-weight:700;font-size:0.85rem;border:2px solid;display:inline-block;min-width:60px;text-align:center}
-        .hp{background:rgba(0,255,136,0.2);color:var(--primary);border-color:var(--primary)}
-        .lp{background:rgba(255,68,68,0.2);color:var(--danger);border-color:var(--danger)}
-        .hp1{background:gold;color:#000;border-color:gold;box-shadow:0 0 10px gold}
+        .hp{background:rgba(0,255,136,0.2);color:var(--primary);border-color:var(--primary)}.lp{background:rgba(255,68,68,0.2);color:var(--danger);border-color:var(--danger)}.hp1{background:gold;color:#000;border-color:gold;box-shadow:0 0 10px gold}
         .role{font-size:0.75rem;padding:2px 8px;border-radius:4px;text-transform:uppercase;font-weight:700}
-        .role-owner{background:gold;color:#000}.role-admin{background:#6366f1;color:#fff}.role-tester{background:#10b981;color:#fff}.role-player{background:var(--border);color:var(--muted)}
+        .role-owner{background:gold;color:#000}.role-admin{background:#6366f1;color:#fff}.role-tester{background:#10b981;color:#fff}.role-player{background:var(--border);color:var(--muted)}.role-cheater{background:var(--danger);color:#fff}.role-banned{background:#333;color:#666;text-decoration:line-through}
         .modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;z-index:1000}
-        .modal.show{display:flex}
-        .modal-box{background:var(--card);padding:2rem;border-radius:12px;width:90%;max-width:400px;border:2px solid var(--border)}
-        .modal-box h3{text-align:center;margin-bottom:1.5rem;color:var(--primary)}
-        .form-group{margin-bottom:1rem}
+        .modal.show{display:flex}.modal-box{background:var(--card);padding:2rem;border-radius:12px;width:90%;max-width:450px;border:2px solid var(--border)}
+        .modal-box h3{text-align:center;margin-bottom:1.5rem;color:var(--primary)}.form-group{margin-bottom:1rem}
         .form-group label{display:block;margin-bottom:0.5rem;color:var(--muted);font-size:0.9rem}
         .form-input{width:100%;padding:0.8rem;background:var(--bg);border:2px solid var(--border);color:var(--text);border-radius:6px}
-        .form-input:focus{outline:none;border-color:var(--primary)}
+        .form-input:focus{outline:none;border-color:var(--primary)}.form-row{display:flex;gap:1rem}.form-row .form-group{flex:1}
         .msg{padding:0.8rem;border-radius:6px;margin-bottom:1rem;display:none;font-weight:600}
         .msg.show{display:block}.msg.err{background:rgba(255,68,68,0.2);color:#fca5a5}.msg.ok{background:rgba(0,255,136,0.2);color:#6ee7b7}
         .toggle{text-align:center;margin-top:1rem;color:var(--muted);cursor:pointer}.toggle:hover{color:var(--primary)}
         #debug{position:fixed;bottom:0;left:0;right:0;background:#000;color:#0f0;font-family:monospace;font-size:12px;padding:10px;max-height:150px;overflow-y:auto;display:none;z-index:2000;border-top:2px solid var(--primary)}
-        #debug.show{display:block}
-        #toggleDebug{position:fixed;bottom:10px;right:10px;background:var(--card);border:2px solid var(--border);color:var(--muted);padding:6px 10px;cursor:pointer;border-radius:6px;z-index:2001;font-size:11px}
-        .loading{text-align:center;padding:2rem;color:var(--muted)}
-        .hidden{display:none!important}
+        #debug.show{display:block}#toggleDebug{position:fixed;bottom:10px;right:10px;background:var(--card);border:2px solid var(--border);color:var(--muted);padding:6px 10px;cursor:pointer;border-radius:6px;z-index:2001;font-size:11px}
+        .loading{text-align:center;padding:2rem;color:var(--muted)}.hidden{display:none!important}
+        
+        /* ADMIN PANEL STYLES */
+        .admin-panel{background:var(--card);border-radius:12px;padding:2rem;margin-top:2rem;border:2px solid var(--primary);display:none}
+        .admin-panel.show{display:block}
+        .admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+        .admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem}
+        .admin-card{background:var(--bg);padding:1.5rem;border-radius:8px;border:1px solid var(--border)}
+        .admin-card h4{color:var(--primary);margin-bottom:1rem;font-size:1.1rem}
+        .player-list{max-height:300px;overflow-y:auto}
+        .player-item{display:flex;justify-content:space-between;align-items:center;padding:0.75rem;border-bottom:1px solid var(--border)}
+        .player-item:last-child{border-bottom:none}
+        .player-actions{display:flex;gap:0.5rem}
+        .btn-sm{padding:0.3rem 0.6rem;font-size:0.8rem}
+        .badge{padding:0.2rem 0.5rem;border-radius:4px;font-size:0.75rem;font-weight:700}
+        .badge-owner{background:gold;color:#000}.badge-admin{background:#6366f1;color:#fff}.badge-tester{background:#10b981;color:#fff}
+        .tier-select{display:grid;grid-template-columns:repeat(4,1fr);gap:0.3rem;margin-top:0.5rem}
+        .tier-option{padding:0.3rem;text-align:center;font-size:0.75rem;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--bg);transition:0.2s}
+        .tier-option:hover,.tier-option.selected{background:var(--primary);color:#000;border-color:var(--primary)}
+        @media(max-width:900px){.admin-grid{grid-template-columns:1fr}.form-row{flex-direction:column}.tier-select{grid-template-columns:repeat(3,1fr)}}
     </style>
 </head>
 <body>
@@ -64,13 +72,13 @@
     </header>
     <div class="container">
         <div id="connStatus" class="status connecting">Verbinde...</div>
-        
         <div id="authGate" class="gate">
             <h2>🔒 Zugang geschützt</h2>
             <p style="color:var(--muted);margin-bottom:1.5rem">Melde dich an oder registriere dich, um das Leaderboard zu sehen.</p>
             <button class="btn btn-primary" onclick="openAuth()">Jetzt anmelden</button>
         </div>
 
+        <!-- LEADERBOARD -->
         <div id="lbContainer" class="table-box">
             <h2 style="padding:1rem;border-bottom:1px solid var(--border)">🏆 Leaderboard</h2>
             <table>
@@ -78,8 +86,43 @@
                 <tbody id="lbBody"><tr><td colspan="7" class="loading">Lade Daten...</td></tr></tbody>
             </table>
         </div>
+
+        <!-- ADMIN PANEL (nur für admin/owner) -->
+        <div id="adminPanel" class="admin-panel">
+            <div class="admin-header">
+                <h3>⚙️ Admin Dashboard</h3>
+                <span id="adminRole" class="badge badge-admin">Admin</span>
+            </div>
+            <div class="admin-grid">
+                <!-- Spieler hinzufügen -->
+                <div class="admin-card">
+                    <h4>➕ Spieler hinzufügen</h4>
+                    <div id="adminMsg" class="msg"></div>
+                    <div class="form-group"><label>Minecraft Name *</label><input type="text" id="admName" class="form-input" placeholder="z.B. Notch"></div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Region</label><select id="admRegion" class="form-input"><option value="EU">Europa</option><option value="NA">Nordamerika</option><option value="DE">Deutschland</option><option value="AS">Asien</option></select></div>
+                        <div class="form-group"><label>Gamemode</label><select id="admMode" class="form-input"><option value="1v1">1v1</option><option value="FFA">FFA</option><option value="UHC">UHC</option><option value="PotPvP">PotPvP</option><option value="Crystal">Crystal</option><option value="Sword">Sword</option><option value="Axe">Axe</option></select></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label>Punkte</label><input type="number" id="admPoints" class="form-input" placeholder="0" min="0"></div>
+                        <div class="form-group"><label>Tier</label><select id="admTier" class="form-input"></select></div>
+                    </div>
+                    <div class="form-group"><label>Rolle</label><select id="admRole" class="form-input"><option value="player">Player</option><option value="tester">Tester</option><option value="admin">Admin</option><option value="owner">Owner</option><option value="cheater">Cheater</option><option value="banned">Banned</option></select></div>
+                    <button class="btn btn-success" onclick="savePlayer()" style="width:100%">💾 Speichern</button>
+                </div>
+                <!-- Spieler verwalten -->
+                <div class="admin-card">
+                    <h4>👥 Alle Spieler verwalten</h4>
+                    <div class="form-group"><label>Suche</label><input type="text" id="admSearch" class="form-input" placeholder="Name eingeben..." onkeyup="filterPlayers()"></div>
+                    <div id="playerList" class="player-list">
+                        <div class="loading">Lade Spieler...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- AUTH MODAL -->
     <div id="authModal" class="modal">
         <div class="modal-box">
             <h3 id="authTitle">Anmelden</h3>
@@ -96,250 +139,118 @@
     <div id="debug"></div>
 
     <script>
-        // ===== KONFIGURATION =====
+        // ===== KONFIG =====
         const SUPABASE_URL = 'https://yqgtlfbykubjizqghiat.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3RsZmJ5a3Viaml6cWdoaWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDQ0NzIsImV4cCI6MjA5MjcyMDQ3Mn0.qY9zREp-l_dpKJT1fnX6tiYKdsUwv0QNLezbUTkwTho';
-        
-        // ===== GLOBALE VARIABLEN =====
-        let sb = null;
-        let currentUser = null;
-        let loginMode = true;
+        const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        let currentUser = null, userRole = 'guest', loginMode = true;
 
-        // ===== DEBUG KONSOLE (GARANTIERT FUNKTIONIEREND) =====
-        function toggleDebugConsole() {
-            const dbg = document.getElementById('debug');
-            if(dbg) dbg.classList.toggle('show');
-        }
-        document.addEventListener('keydown', (e) => {
-            if(e.key.toLowerCase() === 'd' && e.target.tagName !== 'INPUT') {
-                e.preventDefault();
-                toggleDebugConsole();
-            }
-        });
-        function log(msg) {
-            const dbg = document.getElementById('debug');
-            if(dbg) {
-                const time = new Date().toLocaleTimeString();
-                dbg.innerHTML += `<div>[${time}] ${msg}</div>`;
-                dbg.scrollTop = dbg.scrollHeight;
-            }
-            console.log(msg);
+        // ===== DEBUG =====
+        function toggleDebugConsole(){const d=document.getElementById('debug');if(d)d.classList.toggle('show')}
+        document.addEventListener('keydown',e=>{if(e.key.toLowerCase()==='d'&&e.target.tagName!=='INPUT'){e.preventDefault();toggleDebugConsole()}});
+        function log(t){const d=document.getElementById('debug');if(d){d.innerHTML+=`<div>[${new Date().toLocaleTimeString()}] ${t}</div>`;d.scrollTop=d.scrollHeight}console.log(t)}
+
+        // ===== INIT =====
+        async function init(){
+            log('🎮 MC Power gestartet');
+            try{
+                const{error}=await sb.from('players').select('id').limit(1);
+                if(error?.message.includes('does not exist'))throw new Error('Tabellen fehlen! SQL in Supabase ausführen');
+                if(error)throw error;
+                document.getElementById('connStatus').className='status connected';
+                document.getElementById('connStatus').textContent='🟢 Verbunden';
+                log('✅ DB verbunden');
+                generateTierOptions();
+                await checkSession();
+            }catch(err){log('❌ '+err.message);document.getElementById('connStatus').className='status error';document.getElementById('connStatus').textContent='🔴 '+err.message}
         }
 
-        // ===== SUPABASE INIT (SICHER) =====
-        async function initSupabase() {
-            log('🔄 Supabase wird initialisiert...');
-            try {
-                // Warte bis CDN geladen ist
-                if(!window.supabase) throw new Error('Supabase Library nicht geladen! Prüfe Internetverbindung.');
-                
-                sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-                log('✅ Supabase Client erstellt');
-
-                // Verbindung testen
-                const { error } = await sb.from('players').select('id').limit(1);
-                if(error && error.message.includes('does not exist')) {
-                    throw new Error('❌ Tabellen fehlen! Bitte SQL-Skript in Supabase ausführen.');
+        // ===== AUTH =====
+        function openAuth(){document.getElementById('authModal').classList.add('show');document.getElementById('authMsg').className='msg';document.getElementById('inpUser').focus()}
+        function closeAuth(){document.getElementById('authModal').classList.remove('show')}
+        function toggleAuthMode(){loginMode=!loginMode;document.getElementById('authTitle').textContent=loginMode?'Anmelden':'Registrieren';document.getElementById('btnAuth').textContent=loginMode?'Einloggen':'Registrieren';document.getElementById('authToggle').textContent=loginMode?'Noch kein Account? Registrieren':'Bereits Account? Einloggen';document.getElementById('authMsg').className='msg'}
+        function showAuthMsg(txt,ok){const el=document.getElementById('authMsg');el.textContent=txt;el.className='msg show '+(ok?'ok':'err')}
+        async function handleAuth(){
+            const u=document.getElementById('inpUser').value.trim(),p=document.getElementById('inpPass').value;
+            if(!u||!p)return showAuthMsg('❌ Felder ausfüllen',false);
+            if(!loginMode&&p.length<6)return showAuthMsg('❌ Passwort mind. 6 Zeichen',false);
+            const btn=document.getElementById('btnAuth');btn.disabled=true;
+            try{
+                const email=u.toLowerCase()+'@mcpower.local';
+                if(loginMode){
+                    const{data,error}=await sb.auth.signInWithPassword({email,password:p});if(error)throw error;if(!data?.user)throw new Error('Ungültige Antwort');
+                    currentUser=data.user;log('✅ Login');showAuthMsg('✅ Erfolgreich!',true);setTimeout(closeAuth,800);await loadUserRole();applyAuthState();await loadLeaderboard();await loadAllPlayers();
+                }else{
+                    const{data,error}=await sb.auth.signUp({email,password:p});if(error)throw error;if(!data?.user)throw new Error('Registrierung fehlgeschlagen');
+                    await sb.from('players').insert([{user_id:data.user.id,username:u,display_name:u,role:'player',region:'DE'}]);
+                    showAuthMsg('✅ Account erstellt! Bitte einloggen.',true);loginMode=true;toggleAuthMode()
                 }
-                if(error) throw error;
-                
-                log('✅ Datenbank verbunden');
-                document.getElementById('connStatus').className = 'status connected';
-                document.getElementById('connStatus').textContent = '🟢 Verbunden';
-                return true;
-            } catch(err) {
-                log('❌ ' + err.message);
-                document.getElementById('connStatus').className = 'status error';
-                document.getElementById('connStatus').textContent = '🔴 Fehler';
-                return false;
-            }
+            }catch(err){showAuthMsg('❌ '+err.message,false);log('❌ '+err.message)}finally{btn.disabled=false}
         }
-
-        // ===== AUTH UI =====
-        function openAuth() { 
-            document.getElementById('authModal').classList.add('show'); 
-            document.getElementById('authMsg').className = 'msg';
-            document.getElementById('inpUser').focus();
-            log('🔐 Login Modal geöffnet');
+        async function loadUserRole(){try{const{data}=await sb.from('players').select('role').eq('user_id',currentUser?.id).single();userRole=data?.role||'player'}catch{userRole='player'}}
+        function applyAuthState(){
+            document.getElementById('btnLogin').classList.toggle('hidden',!!currentUser);
+            document.getElementById('btnLogout').classList.toggle('hidden',!currentUser);
+            document.getElementById('authGate').style.display=currentUser?'none':'block';
+            document.getElementById('lbContainer').style.display=currentUser?'block':'none';
+            // Admin Panel nur für admin/owner
+            const adminPanel=document.getElementById('adminPanel');
+            if(adminPanel)adminPanel.classList.toggle('show',['admin','owner','co'].includes(userRole)&&!!currentUser);
+            if(['admin','owner','co'].includes(userRole)&&currentUser){document.getElementById('adminRole').textContent=userRole.toUpperCase();loadAllPlayers()}
         }
-        function closeAuth() { 
-            document.getElementById('authModal').classList.remove('show'); 
-            log('🔐 Login Modal geschlossen');
-        }
-        function toggleAuthMode() {
-            loginMode = !loginMode;
-            document.getElementById('authTitle').textContent = loginMode ? 'Anmelden' : 'Registrieren';
-            document.getElementById('btnAuth').textContent = loginMode ? 'Einloggen' : 'Registrieren';
-            document.getElementById('authToggle').textContent = loginMode ? 'Noch kein Account? Registrieren' : 'Bereits Account? Einloggen';
-            document.getElementById('authMsg').className = 'msg';
-            log('🔄 Modus: ' + (loginMode ? 'LOGIN' : 'REGISTER'));
-        }
-        function showAuthMsg(txt, ok) {
-            const el = document.getElementById('authMsg');
-            el.textContent = txt;
-            el.className = 'msg show ' + (ok ? 'ok' : 'err');
-        }
-
-        // ===== AUTH LOGIK (STRIKT) =====
-        async function handleAuth() {
-            const u = document.getElementById('inpUser').value.trim();
-            const p = document.getElementById('inpPass').value;
-            
-            if(!u || !p) return showAuthMsg('❌ Bitte Name und Passwort eingeben', false);
-            if(!loginMode && p.length < 6) return showAuthMsg('❌ Passwort muss mind. 6 Zeichen haben', false);
-            
-            const btn = document.getElementById('btnAuth');
-            btn.disabled = true;
-            btn.textContent = loginMode ? 'Prüfe...' : 'Erstelle...';
-            
-            try {
-                const email = u.toLowerCase() + '@mcpower.local';
-                log(loginMode ? '🔑 Login: ' + u : '📝 Register: ' + u);
-                
-                if(loginMode) {
-                    const { data, error } = await sb.auth.signInWithPassword({ email, password: p });
-                    if(error) throw error;
-                    if(!data?.user) throw new Error('Ungültige Serverantwort');
-                    
-                    currentUser = data.user;
-                    log('✅ Login erfolgreich');
-                    showAuthMsg('✅ Erfolgreich!', true);
-                    setTimeout(closeAuth, 800);
-                    applyAuthState();
-                    await loadLeaderboard();
-                } else {
-                    const { data, error } = await sb.auth.signUp({ email, password: p });
-                    if(error) throw error;
-                    if(!data?.user) throw new Error('Registrierung fehlgeschlagen');
-                    
-                    // Profil anlegen
-                    await sb.from('players').insert([{
-                        user_id: data.user.id, username: u, display_name: u, role: 'player', region: 'DE'
-                    }]);
-                    log('✅ Account erstellt');
-                    showAuthMsg('✅ Account erstellt! Bitte einloggen.', true);
-                    loginMode = true;
-                    toggleAuthMode();
-                }
-            } catch(err) {
-                log('❌ Auth Fehler: ' + err.message);
-                showAuthMsg('❌ ' + err.message, false);
-            } finally {
-                btn.disabled = false;
-                btn.textContent = loginMode ? 'Einloggen' : 'Registrieren';
-            }
-        }
-
-        async function checkSession() {
-            log('🔍 Prüfe Session...');
-            try {
-                const { data: { session } } = await sb.auth.getSession();
-                if(session?.user) {
-                    currentUser = session.user;
-                    log('✅ Session gefunden');
-                    applyAuthState();
-                    await loadLeaderboard();
-                } else {
-                    log('ℹ️ Keine Session');
-                    applyAuthState();
-                }
-            } catch(err) {
-                log('⚠️ Session-Check: ' + err.message);
-                applyAuthState();
-            }
-        }
-
-        function applyAuthState() {
-            if(currentUser) {
-                document.getElementById('btnLogin').classList.add('hidden');
-                document.getElementById('btnLogout').classList.remove('hidden');
-                document.getElementById('authGate').style.display = 'none';
-                document.getElementById('lbContainer').style.display = 'block';
-            } else {
-                document.getElementById('btnLogin').classList.remove('hidden');
-                document.getElementById('btnLogout').classList.add('hidden');
-                document.getElementById('authGate').style.display = 'block';
-                document.getElementById('lbContainer').style.display = 'none';
-            }
-        }
-
-        async function doLogout() {
-            log('🚪 Logout...');
-            await sb.auth.signOut();
-            currentUser = null;
-            applyAuthState();
-            document.getElementById('lbBody').innerHTML = '<tr><td colspan="7" class="loading">Bitte anmelden</td></tr>';
-        }
+        async function doLogout(){await sb.auth.signOut();currentUser=null;userRole='guest';applyAuthState();document.getElementById('lbBody').innerHTML='<tr><td colspan="7" class="loading">Bitte anmelden</td></tr>'}
+        async function checkSession(){const{data}=await sb.auth.getSession();if(data?.session){currentUser=data.session.user;await loadUserRole();applyAuthState();await loadLeaderboard();if(['admin','owner','co'].includes(userRole))await loadAllPlayers()}}
 
         // ===== LEADERBOARD =====
-        async function loadLeaderboard() {
-            if(!currentUser) { log('⛔ LB Blockiert: Nicht eingeloggt'); return; }
-            log('📊 Lade Leaderboard...');
-            const tb = document.getElementById('lbBody');
-            tb.innerHTML = '<tr><td colspan="7" class="loading">Lade...</td></tr>';
-            
-            try {
-                const { data, error } = await sb.from('leaderboard')
-                    .select('*, players(username, display_name, region, role, is_banned)')
-                    .order('points', { ascending: false })
-                    .limit(100);
-                
-                if(error) throw error;
-                tb.innerHTML = '';
-                if(!data || data.length === 0) {
-                    tb.innerHTML = '<tr><td colspan="7" class="loading">Keine Spieler eingetragen</td></tr>';
-                    return;
-                }
-                
-                // Gruppiere nach Spieler
-                const map = new Map();
-                data.forEach(r => {
-                    const p = r.players;
-                    if(!p || p.is_banned) return;
-                    if(!map.has(p.id)) map.set(p.id, {p, entries:[]});
-                    map.get(p.id).entries.push(r);
-                });
-                
-                const sorted = Array.from(map.values()).sort((a,b) => Math.max(...b.entries.map(e=>e.points)) - Math.max(...a.entries.map(e=>e.points)));
-                
-                sorted.forEach((it, idx) => {
-                    const p = it.p;
-                    const best = it.entries.reduce((m,e) => e.points > m.points ? e : m);
-                    const rc = idx < 1 ? 'r1' : idx < 2 ? 'r2' : idx < 3 ? 'r3' : 'rother';
-                    const tc = best.tier.includes('HP') ? 'hp' : 'lp';
-                    const tc1 = best.tier === 'HP1' ? 'hp1' : '';
-                    tb.innerHTML += `<tr>
-                        <td><span class="rank ${rc}">${idx+1}</span></td>
-                        <td><strong>${p.display_name||p.username}</strong></td>
-                        <td>${p.region||'-'}</td>
-                        <td>${best.gamemode}</td>
-                        <td style="color:var(--primary)">${best.points}</td>
-                        <td><span class="tier ${tc} ${tc1}">${best.tier}</span></td>
-                        <td><span class="role role-${p.role}">${p.role}</span></td>
-                    </tr>`;
-                });
-                log('✅ '+sorted.length+' Spieler geladen');
-            } catch(err) {
-                log('❌ LB Fehler: ' + err.message);
-                tb.innerHTML = '<tr><td colspan="7" class="loading" style="color:var(--danger)">Fehler: ' + err.message + '</td></tr>';
-            }
+        async function loadLeaderboard(){
+            if(!currentUser)return;log('📊 Lade LB...');const tb=document.getElementById('lbBody');tb.innerHTML='<tr><td colspan="7" class="loading">Lade...</td></tr>';
+            try{
+                const{data,error}=await sb.from('leaderboard').select('*,players(username,display_name,region,role,is_banned)').order('points',{ascending:false}).limit(100);
+                if(error)throw error;tb.innerHTML='';if(!data?.length){tb.innerHTML='<tr><td colspan="7" class="loading">Keine Spieler</td></tr>';return}
+                const map=new Map();data.forEach(r=>{const p=r.players;if(!p||p.is_banned)return;if(!map.has(p.id))map.set(p.id,{p,entries:[]});map.get(p.id).entries.push(r)});
+                const sorted=Array.from(map.values()).sort((a,b)=>Math.max(...b.entries.map(e=>e.points))-Math.max(...a.entries.map(e=>e.points)));
+                sorted.forEach((it,idx)=>{const p=it.p,best=it.entries.reduce((m,e)=>e.points>m.points?e:m);const rc=idx<1?'r1':idx<2?'r2':idx<3?'r3':'rother';const tc=best.tier.includes('HP')?'hp':'lp',tc1=best.tier==='HP1'?'hp1':'';tb.innerHTML+=`<tr><td><span class="rank ${rc}">${idx+1}</span></td><td><strong>${p.display_name||p.username}</strong></td><td>${p.region||'-'}</td><td>${best.gamemode}</td><td style="color:var(--primary)">${best.points}</td><td><span class="tier ${tc} ${tc1}">${best.tier}</span></td><td><span class="role role-${p.role}">${p.role}</span></td></tr>`});
+                log('✅ '+sorted.length+' Spieler');
+            }catch(err){log('❌ LB: '+err.message);tb.innerHTML='<tr><td colspan="7" class="loading" style="color:var(--danger)">Fehler: '+err.message+'</td></tr>'}
         }
 
-        // ===== EVENTS & START =====
-        document.getElementById('btnLogin').onclick = openAuth;
-        document.getElementById('btnLogout').onclick = doLogout;
-        document.getElementById('btnAuth').onclick = handleAuth;
-        document.getElementById('authToggle').onclick = toggleAuthMode;
-        document.getElementById('authModal').onclick = (e) => { if(e.target.id === 'authModal') closeAuth(); };
-        document.getElementById('inpUser').onkeypress = (e) => { if(e.key==='Enter') document.getElementById('inpPass').focus(); };
-        document.getElementById('inpPass').onkeypress = (e) => { if(e.key==='Enter') handleAuth(); };
+        // ===== ADMIN: TIER OPTIONS =====
+        function generateTierOptions(){
+            const sel=document.getElementById('admTier');if(!sel)return;sel.innerHTML='';
+            for(let i=10;i>=1;i--){sel.innerHTML+=`<option value="LP${i}">LP${i}</option><option value="HP${i}">HP${i}</option>`}
+        }
 
-        // Start Sequenz
-        window.addEventListener('load', async () => {
-            log(' MC Power gestartet');
-            const ok = await initSupabase();
-            if(ok) await checkSession();
-        });
+        // ===== ADMIN: SPIELER SPEICHERN =====
+        async function savePlayer(){
+            const name=document.getElementById('admName').value.trim(),region=document.getElementById('admRegion').value,mode=document.getElementById('admMode').value,points=parseInt(document.getElementById('admPoints').value)||0,tier=document.getElementById('admTier').value,role=document.getElementById('admRole').value,msg=document.getElementById('adminMsg');
+            if(!name)return showAdminMsg('❌ Name erforderlich',false);
+            try{
+                // Player suchen/erstellen
+                let{data:player}=await sb.from('players').select('id').eq('username',name).single();
+                if(!player){const{data:newP}=await sb.from('players').insert([{username:name,display_name:name,region,role}]).select().single();player=newP}else{await sb.from('players').update({region,role}).eq('id',player.id)}
+                // Leaderboard upsert
+                await sb.from('leaderboard').upsert({player_id:player.id,gamemode:mode,points,tier},{onConflict:'player_id,gamemode'});
+                showAdminMsg('✅ Gespeichert!',true);document.getElementById('admName').value='';await loadLeaderboard();await loadAllPlayers();
+            }catch(err){showAdminMsg('❌ '+err.message,false);log('❌ Save: '+err.message)}
+        }
+        function showAdminMsg(txt,ok){const el=document.getElementById('adminMsg');el.textContent=txt;el.className='msg show '+(ok?'ok':'err');setTimeout(()=>el.classList.remove('show'),3000)}
+
+        // ===== ADMIN: ALLE SPIELER LADEN =====
+        async function loadAllPlayers(){
+            const list=document.getElementById('playerList');if(!list)return;list.innerHTML='<div class="loading">Lade...</div>';
+            try{
+                const{data}=await sb.from('players').select('id,username,display_name,region,role,is_banned').order('username');
+                if(!data?.length){list.innerHTML='<div style="color:var(--muted)">Keine Spieler</div>';return}
+                list.innerHTML=data.map(p=>`<div class="player-item" data-name="${p.username.toLowerCase()}"><div><strong>${p.display_name||p.username}</strong><br><small style="color:var(--muted)">${p.region||'-'}</small></div><div class="player-actions"><span class="badge badge-${p.role}">${p.role}</span><button class="btn btn-sm" onclick="editPlayer('${p.id}','${p.username}')">✏️</button><button class="btn btn-sm btn-danger" onclick="banPlayer('${p.id}',${!p.is_banned})">${p.is_banned?'Entbannen':'Bannen'}</button></div></div>`).join('');
+                log('✅ '+data.length+' Spieler geladen');
+            }catch(err){list.innerHTML='<div style="color:var(--danger)">Fehler</div>';log('❌ LoadPlayers: '+err.message)}
+        }
+        function filterPlayers(){const q=document.getElementById('admSearch').value.toLowerCase(),items=document.querySelectorAll('.player-item');items.forEach(it=>{const name=it.dataset.name;it.style.display=name.includes(q)?'flex':'none'})}
+        async function editPlayer(id,username){const newRole=prompt('Neue Rolle für '+username+':\nplayer, tester, admin, owner, cheater, banned', 'player');if(newRole&&['player','tester','admin','owner','cheater','banned'].includes(newRole)){await sb.from('players').update({role:newRole}).eq('id',id);showAdminMsg('✅ Rolle aktualisiert',true);await loadAllPlayers();await loadLeaderboard()}}
+        async function banPlayer(id,ban){await sb.from('players').update({is_banned:ban}).eq('id',id);showAdminMsg('✅ '+(ban?'gebanned':'entbannt'),true);await loadAllPlayers();await loadLeaderboard()}
+
+        // ===== EVENTS =====
+        document.getElementById('btnLogin').onclick=openAuth;document.getElementById('btnLogout').onclick=doLogout;document.getElementById('btnAuth').onclick=handleAuth;document.getElementById('authToggle').onclick=toggleAuthMode;document.getElementById('authModal').onclick=e=>{if(e.target.id==='authModal')closeAuth()};document.getElementById('inpUser').onkeypress=e=>{if(e.key==='Enter')document.getElementById('inpPass').focus()};document.getElementById('inpPass').onkeypress=e=>{if(e.key==='Enter')handleAuth()};window.addEventListener('load',init);
     </script>
 </body>
 </html>
