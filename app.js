@@ -1,70 +1,94 @@
-// app.js
-console.log('✅ app.js geladen');
-
-const Logger = {
-    log: function(msg) {
-        const c = document.getElementById('debugConsole');
-        if(c) {
-            const t = new Date().toLocaleTimeString();
-            c.innerHTML += `<div class="log-entry">[${t}] ${msg}</div>`;
-            c.scrollTop = c.scrollHeight;
-        }
-    }
-};
-
-function bindEvents() {
-    console.log('[App] Binde Events...');
-    const btnAuth = document.getElementById('btnAuth');
-    const btnLogout = document.getElementById('btnLogout');
-    const authModal = document.getElementById('authModal');
+async function savePlayer(){
+    const name = document.getElementById('admName').value.trim();
+    const region = document.getElementById('admRegion').value;
+    const mode = document.getElementById('admMode').value;
+    const points = parseInt(document.getElementById('admPoints').value) || 0;
+    const tier = document.getElementById('admTier').value;
+    const role = document.getElementById('admRole').value;
+    const msg = document.getElementById('adminMsg');
     
-    if(btnAuth) btnAuth.onclick = window.openAuthModal;
-    if(btnLogout) btnLogout.onclick = window.doLogout;
-    if(document.getElementById('authClose')) document.getElementById('authClose').onclick = window.closeAuthModal;
-    if(document.getElementById('authToggle')) document.getElementById('authToggle').onclick = window.toggleAuthMode;
-    if(document.getElementById('btnAuthSubmit')) document.getElementById('btnAuthSubmit').onclick = window.handleAuth;
-    
-    // Debug Toggle
-    const dbgBtn = document.getElementById('toggleDebug');
-    if(dbgBtn) dbgBtn.onclick = () => {
-        const dc = document.getElementById('debugConsole');
-        if(dc) dc.classList.toggle('visible');
-    };
-    
-    // Keyboard
-    document.addEventListener('keydown', (e) => {
-        if(e.key.toLowerCase() === 'd') {
-            const dc = document.getElementById('debugConsole');
-            if(dc) dc.classList.toggle('visible');
-        }
-    });
-}
-
-async function init() {
-    Logger.log('🎮 MC Power startet...');
-    
-    // Prüfe ob alle Funktionen da sind
-    if(typeof window.initSupabaseClient !== 'function') {
-        Logger.log('❌ FEHLER: initSupabaseClient nicht gefunden!');
-        Logger.log('🔍 Mögliche Ursachen:');
-        Logger.log('  1. supabase-client.js nicht gespeichert?');
-        Logger.log('  2. Browser-Cache? Drücke STRG+F5!');
-        Logger.log('  3. Syntax-Fehler in config.js?');
-        alert('Fehler: supabase-client.js nicht geladen. Bitte STRG+F5 drücken!');
+    if(!name) {
+        showAdminMsg('❌ Name erforderlich', false);
         return;
     }
     
-    bindEvents();
-    const ok = await window.initSupabaseClient();
-    if(ok) {
-        await window.checkSession();
+    try {
+        // 1. Prüfen ob Spieler existiert
+        const { data: existingPlayer, error: searchError } = await window.supabaseClient
+            .from('players')
+            .select('id')
+            .eq('username', name)
+            .single();
+        
+        let playerId;
+        
+        if(existingPlayer && existingPlayer.id) {
+            // Spieler existiert - aktualisieren
+            playerId = existingPlayer.id;
+            const { error: updateError } = await window.supabaseClient
+                .from('players')
+                .update({ 
+                    display_name: name,
+                    region: region,
+                    role: role 
+                })
+                .eq('id', playerId);
+            
+            if(updateError) throw updateError;
+            console.log('[Admin] ✅ Spieler aktualisiert:', playerId);
+        } else {
+            // Spieler existiert nicht - neu erstellen
+            const { data: newPlayer, error: insertError } = await window.supabaseClient
+                .from('players')
+                .insert([{
+                    username: name,
+                    display_name: name,
+                    region: region,
+                    role: role
+                }])
+                .select('id')
+                .single();
+            
+            if(insertError) throw insertError;
+            if(!newPlayer || !newPlayer.id) throw new Error('Keine ID vom neuen Spieler erhalten');
+            
+            playerId = newPlayer.id;
+            console.log('[Admin] ✅ Spieler erstellt:', playerId);
+        }
+        
+        // 2. Leaderboard Eintrag erstellen/aktualisieren
+        const { error: lbError } = await window.supabaseClient
+            .from('leaderboard')
+            .upsert({
+                player_id: playerId,
+                gamemode: mode,
+                points: points,
+                tier: tier
+            }, {
+                onConflict: 'player_id,gamemode'
+            });
+        
+        if(lbError) throw lbError;
+        
+        showAdminMsg('✅ Gespeichert!', true);
+        document.getElementById('admName').value = '';
+        document.getElementById('admPoints').value = '0';
+        
+        // Refresh
         await window.loadLeaderboard();
-        Logger.log('✅ Start erfolgreich');
+        await window.loadAllPlayers();
+        
+    } catch(err) {
+        console.error('[Admin] ❌ Fehler:', err);
+        showAdminMsg('❌ ' + err.message, false);
     }
 }
 
-if(document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-} else {
-    init();
+function showAdminMsg(txt, ok) {
+    const el = document.getElementById('adminMsg');
+    if(el) {
+        el.textContent = txt;
+        el.className = 'msg show ' + (ok ? 'ok' : 'err');
+        setTimeout(() => el.classList.remove('show'), 3000);
+    }
 }
