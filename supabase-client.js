@@ -1,48 +1,55 @@
-let supabase = null;
-let isConnected = false;
+// supabase-client.js
+console.log('✅ supabase-client.js wird geladen...');
 
-async function initSupabaseClient() {
-    console.log('[Supabase] Initialisiere...');
+// Globale Variablen explizit an window hängen
+window.supabaseClient = null;
+window.isConnected = false;
+
+window.initSupabaseClient = async function() {
+    console.log('[Supabase] initSupabaseClient() gestartet');
     try {
-        if(typeof window.supabase === 'undefined') throw new Error('Supabase Library nicht geladen!');
-        supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-        console.log('[Supabase] Client erstellt');
-        await testDatabaseConnection();
-        isConnected = true;
-        updateConnectionStatus('connected', 'Verbunden');
+        if(typeof window.supabase === 'undefined') {
+            throw new Error('Supabase Library fehlt! Prüfe Internet/CDN');
+        }
+        if(typeof CONFIG === 'undefined') {
+            throw new Error('CONFIG nicht geladen! config.js prüfen');
+        }
+        
+        window.supabaseClient = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
+        console.log('[Supabase] ✅ Client erstellt');
+        
+        // Test-Abfrage
+        const { error } = await window.supabaseClient.from('players').select('count', { count: 'exact', head: true });
+        if(error && error.message.includes('does not exist')) {
+            throw new Error('Tabellen fehlen! SQL in Supabase ausführen');
+        }
+        if(error) throw error;
+        
+        window.isConnected = true;
         console.log('[Supabase] ✅ Verbunden');
         return true;
     } catch(err) {
-        console.error('[Supabase] ❌ Fehler:', err);
-        updateConnectionStatus('disconnected', 'Fehler: ' + err.message);
-        showBanner('Datenbank-Verbindung fehlgeschlagen: ' + err.message, 'error');
+        console.error('[Supabase] ❌ FEHLER:', err.message);
+        alert('DB-Fehler: ' + err.message);
         return false;
     }
-}
+};
 
-async function testDatabaseConnection() {
-    console.log('[Supabase] Teste Verbindung...');
-    const { data, error } = await supabase.from('players').select('count', { count: 'exact', head: true });
-    if(error) {
-        if(error.message.includes('does not exist')) throw new Error('Tabellen existieren nicht! Bitte SQL in Supabase ausführen.');
-        throw error;
-    }
-    console.log('[Supabase] ✅ Datenbank-Test erfolgreich');
-}
-
-function updateConnectionStatus(status, text) {
+window.updateConnectionStatus = function(status, text) {
     const el = document.getElementById('connectionStatus');
-    if(!el) return;
-    el.className = 'connection-status status-' + status;
-    el.innerHTML = '<span>' + text + '</span>';
-}
+    if(el) {
+        el.className = 'connection-status status-' + status;
+        el.innerHTML = '<span>' + text + '</span>';
+    }
+};
 
-function showBanner(text, type) {
+window.showBanner = function(text, type) {
     const banner = document.getElementById('statusBanner');
-    if(!banner) return;
-    banner.className = 'status-banner ' + type + ' visible';
-    banner.textContent = text;
-    setTimeout(() => { banner.classList.remove('visible'); }, 5000);
-}
+    if(banner) {
+        banner.className = 'status-banner ' + type + ' visible';
+        banner.textContent = text;
+        setTimeout(() => banner.classList.remove('visible'), 5000);
+    }
+};
 
-console.log('[Supabase-Client] Geladen');
+console.log('✅ supabase-client.js fertig geladen');
