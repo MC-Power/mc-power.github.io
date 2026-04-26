@@ -3,1273 +3,343 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MC Power - Leaderboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="handleScriptError('supabase')"></script>
+    <title>MC Power Leaderboard</title>
+    <!-- Supabase Bibliothek laden -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
     <style>
-        :root {
-            --bg: #0b0e14;
-            --card: #151a24;
-            --border: #2a3345;
-            --primary: #00ff88;
-            --danger: #ff4444;
-            --warning: #ffa500;
-            --gold: #ffd700;
-            --text: #e0e6ed;
-            --text-muted: #8892a6;
-            --success: #10b981;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { 
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
-            background: linear-gradient(135deg, #0b0e14 0%, #1a1f2e 100%); 
-            color: var(--text); 
-            min-height: 100vh;
-            line-height: 1.6;
+        /* DESIGN / CSS - HIER FÄNGT DAS DESIGN AN */
+        body {
+            background-color: #0f172a;
+            color: #e2e8f0;
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 0;
         }
         
         /* Header */
-        header { 
-            background: rgba(21, 26, 36, 0.95); 
-            backdrop-filter: blur(10px);
-            padding: 1.25rem 2rem; 
-            border-bottom: 2px solid var(--border); 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-        }
-        .logo { 
-            font-size: 1.75rem; 
-            font-weight: 800; 
-            background: linear-gradient(135deg, var(--primary) 0%, #00cc6a 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-transform: uppercase; 
-            letter-spacing: 3px;
-            text-shadow: 0 0 30px rgba(0,255,136,0.3);
-        }
-        
-        .btn { 
-            background: transparent; 
-            border: 2px solid var(--border); 
-            color: var(--text); 
-            padding: 0.6rem 1.5rem; 
-            cursor: pointer; 
-            border-radius: 8px; 
-            font-weight: 600;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-            margin-left: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .btn:hover { 
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        .btn:active { transform: translateY(0); }
-        .btn-primary { 
-            background: linear-gradient(135deg, var(--primary) 0%, #00cc6a 100%); 
-            color: #000; 
-            border-color: var(--primary);
-        }
-        .btn-primary:hover { 
-            background: linear-gradient(135deg, #00ff88 0%, #00ffaa 100%);
-            box-shadow: 0 0 20px rgba(0,255,136,0.4);
-        }
-        .btn-danger { 
-            background: linear-gradient(135deg, var(--danger) 0%, #cc0000 100%); 
-            color: white; 
-            border-color: var(--danger);
-        }
-        .btn-warning {
-            background: linear-gradient(135deg, var(--warning) 0%, #ff8c00 100%);
-            color: #000;
-            border-color: var(--warning);
-        }
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-
-        /* Container */
-        .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
-
-        /* Status Banner */
-        .status-banner {
-            padding: 1rem 1.5rem;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-            display: none;
-            align-items: center;
-            gap: 1rem;
-            animation: slideIn 0.3s ease;
-        }
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .status-banner.visible { display: flex; }
-        .status-banner.error { 
-            background: rgba(239, 68, 68, 0.15); 
-            border: 2px solid var(--danger);
-            color: #fca5a5;
-        }
-        .status-banner.success { 
-            background: rgba(16, 185, 129, 0.15); 
-            border: 2px solid var(--success);
-            color: #6ee7b7;
-        }
-        .status-banner.warning {
-            background: rgba(255, 165, 0, 0.15);
-            border: 2px solid var(--warning);
-            color: #fcd34d;
-        }
-
-        /* Connection Status */
-        .connection-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }
-        .connection-status::before {
-            content: '';
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        .status-connected { 
-            background: rgba(16, 185, 129, 0.2); 
-            color: var(--success);
-        }
-        .status-connected::before { background: var(--success); }
-        .status-disconnected { 
-            background: rgba(239, 68, 68, 0.2); 
-            color: var(--danger);
-        }
-        .status-disconnected::before { background: var(--danger); }
-        .status-connecting {
-            background: rgba(255, 165, 0, 0.2);
-            color: var(--warning);
-        }
-        .status-connecting::before { background: var(--warning); }
-
-        /* Leaderboard Table */
-        .table-wrapper {
-            background: var(--card);
-            border-radius: 12px;
-            overflow: hidden;
-            border: 2px solid var(--border);
-            box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-        }
-        .table-header {
-            background: linear-gradient(135deg, #1a2233 0%, #2a3345 100%);
-            padding: 1rem 1.5rem;
-            border-bottom: 2px solid var(--border);
+        header {
+            background: #1e293b;
+            padding: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 2px solid #334155;
         }
-        .table-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        .logo { font-size: 24px; font-weight: bold; color: #10b981; }
+        
+        /* Buttons */
+        button {
+            cursor: pointer;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .btn-green { background: #10b981; color: #000; }
+        .btn-green:hover { background: #059669; }
+        .btn-red { background: #ef4444; color: white; }
+        
+        /* Container */
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+        
+        /* Tabelle */
+        .table-box {
+            background: #1e293b;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
         }
         table { width: 100%; border-collapse: collapse; }
-        th { 
-            background: #1a2233; 
-            color: var(--primary); 
-            font-weight: 700; 
-            text-transform: uppercase; 
-            font-size: 0.8rem;
-            letter-spacing: 1px;
-            padding: 1rem 1.25rem;
-            text-align: left;
-            border-bottom: 2px solid var(--border);
-        }
-        td { 
-            padding: 1rem 1.25rem; 
-            border-bottom: 1px solid var(--border);
-            vertical-align: middle;
-        }
-        tbody tr {
-            transition: all 0.2s ease;
-        }
-        tbody tr:hover { 
-            background: rgba(0, 255, 136, 0.05);
-            transform: translateX(4px);
-        }
-        tbody tr:last-child td { border-bottom: none; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #334155; }
+        th { background: #0f172a; color: #10b981; text-transform: uppercase; font-size: 12px; letter-spacing: 1px; }
+        tr:hover { background: #334155; }
         
-        /* Rank Badge */
-        .rank { 
-            display: inline-flex; 
-            align-items: center; 
-            justify-content: center; 
-            width: 40px; 
-            height: 40px; 
-            border-radius: 10px; 
-            font-weight: 800; 
-            font-size: 1rem;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        .rank-1 { 
-            background: linear-gradient(135deg, var(--gold) 0%, #ffaa00 100%); 
-            color: #000;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
-        }
-        .rank-2 { 
-            background: linear-gradient(135deg, #c0c0c0 0%, #a0a0a0 100%); 
-            color: #000;
-        }
-        .rank-3 { 
-            background: linear-gradient(135deg, #cd7f32 0%, #b8860b 100%); 
-            color: #000;
-        }
-        .rank-other { 
-            background: var(--border); 
-            color: var(--text-muted);
-        }
-
-        /* Player Info */
-        .player-cell {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-        .player-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            background: linear-gradient(135deg, var(--border) 0%, #3a4555 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 1.1rem;
-            color: var(--primary);
-            border: 2px solid var(--border);
-        }
-        .player-info {
-            display: flex;
-            flex-direction: column;
-        }
-        .player-name { 
-            font-weight: 700; 
-            font-size: 1rem;
-            color: var(--text);
-        }
-        .player-sub {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-
-        /* Tier Badge */
-        .tier { 
-            padding: 0.4rem 0.9rem; 
-            border-radius: 6px; 
-            font-weight: 700; 
-            font-size: 0.85rem; 
-            display: inline-block;
-            min-width: 65px;
-            text-align: center;
-            border: 2px solid;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .tier.hp { 
-            background: rgba(0, 255, 136, 0.15); 
-            color: #00ff88; 
-            border-color: #00ff88;
-            box-shadow: 0 0 10px rgba(0,255,136,0.2);
-        }
-        .tier.lp { 
-            background: rgba(255, 107, 107, 0.15); 
-            color: #ff6b6b; 
-            border-color: #ff6b6b;
-        }
-        .tier.HP1 { 
-            background: linear-gradient(135deg, var(--gold) 0%, #ffaa00 100%); 
-            color: #000; 
-            border-color: var(--gold);
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
-            animation: glow 2s ease-in-out infinite;
-        }
-        @keyframes glow {
-            0%, 100% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.6); }
-            50% { box-shadow: 0 0 30px rgba(255, 215, 0, 0.8); }
-        }
-
-        /* Role Badge */
-        .role-badge { 
-            font-size: 0.75rem; 
-            padding: 0.3rem 0.7rem; 
-            border-radius: 6px; 
-            text-transform: uppercase; 
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            display: inline-block;
-        }
-        .role-owner { background: linear-gradient(135deg, var(--gold) 0%, #ffaa00 100%); color: #000; }
-        .role-admin { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; }
-        .role-co { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; }
-        .role-tester { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
-        .role-player { background: var(--border); color: var(--text-muted); }
-        .role-cheater { background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%); color: white; }
-        .role-banned { background: #333; color: #666; text-decoration: line-through; }
-
-        /* Loading */
-        .loading-container {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--text-muted);
-        }
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid var(--border);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 1rem;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        .loading-text {
-            font-size: 1.1rem;
-            margin-bottom: 0.5rem;
-        }
-        .loading-sub {
-            font-size: 0.9rem;
-            opacity: 0.7;
-        }
-
-        /* Auth Modal */
-        .modal { 
-            display: none; 
-            position: fixed; 
-            top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.85); 
-            backdrop-filter: blur(5px);
-            justify-content: center; 
-            align-items: center; 
-            z-index: 1000;
-            animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+        /* Tiers Farben */
+        .tier-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+        .hp { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
+        .lp { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+        .hp1 { background: gold; color: black; border: 1px solid gold; box-shadow: 0 0 10px gold; }
+        
+        /* Login Modal */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); align-items: center; justify-content: center;
         }
         .modal.active { display: flex; }
-        .modal-content { 
-            background: linear-gradient(135deg, var(--card) 0%, #1a2233 100%);
-            padding: 2.5rem; 
-            border-radius: 16px; 
-            width: 90%; 
-            max-width: 450px; 
-            border: 2px solid var(--border);
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            animation: slideUp 0.3s ease;
+        .modal-content {
+            background: #1e293b; padding: 30px; border-radius: 10px; width: 300px;
+            border: 1px solid #334155; text-align: center;
         }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(50px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .modal-title { 
-            text-align: center; 
-            margin-bottom: 2rem; 
-            font-size: 1.75rem;
-            font-weight: 800;
-            color: var(--primary);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        .form-group { margin-bottom: 1.5rem; }
-        .form-group label { 
-            display: block; 
-            margin-bottom: 0.5rem; 
-            color: var(--text-muted); 
-            font-size: 0.9rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .form-input { 
-            width: 100%; 
-            padding: 0.9rem 1rem; 
-            background: var(--bg); 
-            border: 2px solid var(--border); 
-            color: var(--text); 
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: all 0.3s;
-        }
-        .form-input:focus { 
-            outline: none; 
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(0,255,136,0.1);
-        }
-        .form-input:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
+        input {
+            width: 100%; padding: 10px; margin-bottom: 10px; background: #0f172a;
+            border: 1px solid #334155; color: white; border-radius: 5px; box-sizing: border-box;
         }
         
-        .status-msg { 
-            padding: 1rem; 
-            border-radius: 8px; 
-            margin-bottom: 1.5rem; 
-            display: none;
-            font-weight: 600;
-        }
-        .status-msg.visible { display: block; animation: slideIn 0.3s ease; }
-        .status-msg.success { 
-            background: rgba(16, 185, 129, 0.2); 
-            color: #6ee7b7; 
-            border: 2px solid var(--success);
-        }
-        .status-msg.error { 
-            background: rgba(239, 68, 68, 0.2); 
-            color: #fca5a5; 
-            border: 2px solid var(--danger);
-        }
-        .status-msg.warning {
-            background: rgba(255, 165, 0, 0.2);
-            color: #fcd34d;
-            border: 2px solid var(--warning);
-        }
-
-        .auth-toggle {
-            text-align: center; 
-            margin-top: 1.5rem; 
-            color: var(--text-muted); 
-            cursor: pointer; 
-            font-size: 0.95rem;
-            font-weight: 600;
-            transition: color 0.3s;
-        }
-        .auth-toggle:hover { 
-            color: var(--primary);
-            text-decoration: underline;
-        }
-        .auth-close {
-            text-align: center;
-            margin-top: 1rem;
-            cursor: pointer;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            transition: color 0.3s;
-        }
-        .auth-close:hover { color: var(--danger); }
-
         /* Debug Console */
-        #debugConsole {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(0, 0, 0, 0.95);
-            color: #0f0;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            padding: 15px;
-            max-height: 250px;
-            overflow-y: auto;
-            border-top: 3px solid var(--primary);
-            display: none;
-            z-index: 2000;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+        #debug {
+            position: fixed; bottom: 0; left: 0; right: 0; background: black; color: lime;
+            font-family: monospace; font-size: 12px; padding: 10px; max-height: 150px; overflow-y: auto;
+            display: none; z-index: 999; border-top: 2px solid lime;
         }
-        #debugConsole.visible { display: block; }
-        #debugConsole .log-entry {
-            padding: 4px 0;
-            border-bottom: 1px solid #222;
-        }
-        #debugConsole .log-error { color: #f66; }
-        #debugConsole .log-success { color: #6f6; }
-        #debugConsole .log-warn { color: #ff6; }
-        #debugConsole .log-info { color: #0f0; }
-        #toggleDebug {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: var(--card);
-            border: 2px solid var(--border);
-            color: var(--text-muted);
-            padding: 8px 12px;
-            font-size: 11px;
-            cursor: pointer;
-            border-radius: 6px;
-            z-index: 2001;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        #toggleDebug:hover {
-            background: var(--border);
-            color: var(--text);
-        }
-
-        /* Empty State */
-        .empty-state {
-            text-align: center;
-            padding: 4rem 2rem;
-            color: var(--text-muted);
-        }
-        .empty-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-            opacity: 0.5;
-        }
-        .empty-text {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
-        }
-        .empty-sub {
-            font-size: 0.95rem;
-            opacity: 0.7;
-        }
-
-        /* Responsive */
-        @media (max-width: 900px) {
-            .container { padding: 1rem; }
-            table { font-size: 0.9rem; }
-            th, td { padding: 0.75rem 0.5rem; }
-            .rank, .tier, .role-badge { font-size: 0.8rem; padding: 0.3rem 0.6rem; }
-            header { flex-direction: column; gap: 1rem; padding: 1rem; }
-        }
-        @media (max-width: 600px) {
-            .table-header { flex-direction: column; gap: 1rem; text-align: center; }
-            .player-cell { flex-direction: column; align-items: flex-start; }
-            .modal-content { padding: 1.5rem; }
-        }
-
-        /* Utility */
-        .hidden { display: none !important; }
-        .text-center { text-align: center; }
-        .mt-2 { margin-top: 2rem; }
-        .mb-2 { margin-bottom: 2rem; }
+        .status-msg { padding: 10px; margin-bottom: 10px; border-radius: 5px; display: none; text-align: center;}
+        .error { background: #ef4444; color: white; }
+        .success { background: #10b981; color: black; }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="logo">⚔️ MC Power</div>
-    <div>
-        <button class="btn btn-primary" id="btnAuth">🔐 Anmelden</button>
-        <button class="btn btn-danger hidden" id="btnLogout">🚪 Abmelden</button>
-    </div>
-</header>
-
-<div class="container">
-    <!-- Connection Status -->
-    <div id="connectionStatus" class="connection-status status-connecting">
-        <span>Verbinde mit Datenbank...</span>
-    </div>
-
-    <!-- Status Banner -->
-    <div id="statusBanner" class="status-banner">
-        <span id="statusBannerIcon">ℹ️</span>
-        <span id="statusBannerText"></span>
-    </div>
-
-    <h1 style="border-bottom: 3px solid var(--primary); padding-bottom: 0.75rem; display: inline-block; margin-bottom: 1.5rem;">
-        🏆 Leaderboard
-    </h1>
-    
-    <div class="table-wrapper">
-        <div class="table-header">
-            <span class="table-title">Top Spieler</span>
-            <span id="playerCount" style="color: var(--text-muted); font-size: 0.9rem;">Lade...</span>
+    <!-- KOPFZEILE -->
+    <header>
+        <div class="logo">⚔️ MC POWER</div>
+        <div>
+            <button id="btnLogin" class="btn-green">Anmelden</button>
+            <button id="btnLogout" class="btn-red" style="display:none;">Abmelden</button>
         </div>
-        <table>
-            <thead>
-                <tr>
-                    <th style="width:70px;">Rang</th>
-                    <th>Spieler</th>
-                    <th style="width:100px;">Region</th>
-                    <th style="width:120px;">Modus</th>
-                    <th style="width:100px;">Punkte</th>
-                    <th style="width:100px;">Tier</th>
-                    <th style="width:100px;">Rolle</th>
-                </tr>
-            </thead>
-            <tbody id="lbBody">
-                <tr>
-                    <td colspan="7">
-                        <div class="loading-container">
-                            <div class="spinner"></div>
-                            <div class="loading-text">Verbinde mit Supabase...</div>
-                            <div class="loading-sub">Bitte warten</div>
-                        </div>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
+    </header>
 
-<!-- Auth Modal -->
-<div id="authModal" class="modal">
-    <div class="modal-content">
-        <h3 class="modal-title" id="authTitle">🔐 Anmelden</h3>
-        <div id="authMsg" class="status-msg"></div>
-        <div class="form-group">
-            <label for="inpUser">Benutzername</label>
-            <input type="text" id="inpUser" class="form-input" placeholder="Dein Minecraft Name" autocomplete="username">
-        </div>
-        <div class="form-group">
-            <label for="inpPass">Passwort</label>
-            <input type="password" id="inpPass" class="form-input" placeholder="Mind. 6 Zeichen" autocomplete="current-password">
-        </div>
-        <button class="btn btn-primary" id="btnAuthSubmit" style="width:100%; padding: 1rem; font-size: 1.1rem;">
-            Anmelden
-        </button>
-        <div class="auth-toggle" id="authToggle">
-            Noch kein Account? <span style="color: var(--primary);">Jetzt registrieren</span>
-        </div>
-        <div class="auth-close" id="authClose">
-            ❌ Abbrechen
+    <div class="container">
+        <h2 style="border-bottom: 2px solid #334155; padding-bottom: 10px;">🏆 Leaderboard</h2>
+        
+        <div id="msgBox" class="status-msg"></div>
+
+        <div class="table-box">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rang</th>
+                        <th>Spieler</th>
+                        <th>Region</th>
+                        <th>Modus</th>
+                        <th>Punkte</th>
+                        <th>Tier</th>
+                        <th>Rolle</th>
+                    </tr>
+                </thead>
+                <tbody id="lbBody">
+                    <tr><td colspan="7" style="text-align:center; color: #64748b;">Lade Daten...</td></tr>
+                </tbody>
+            </table>
         </div>
     </div>
-</div>
 
-<!-- Debug Console -->
-<button id="toggleDebug" title="Debug Konsole öffnen/schließen (Taste: D)">🐛 Debug [D]</button>
-<div id="debugConsole"></div>
+    <!-- LOGIN MODAL -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle">Anmelden</h3>
+            <input type="text" id="username" placeholder="Benutzername">
+            <input type="password" id="password" placeholder="Passwort">
+            <button class="btn-green" style="width:100%" id="btnSubmit">Los</button>
+            <p style="margin-top:15px; font-size: 12px; color: #94a3b8; cursor:pointer;" id="toggleMode">
+                Noch keinen Account? Registrieren
+            </p>
+            <p style="font-size: 12px; color: #ef4444; cursor:pointer;" onclick="closeModal()">Abbrechen</p>
+        </div>
+    </div>
 
-<script>
-    // ===== KONFIGURATION =====
-    const CONFIG = {
-        SUPABASE_URL: 'https://yqgtlfbykubjizqghiat.supabase.co',
-        SUPABASE_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3RsZmJ5a3Viaml6cWdoaWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDQ0NzIsImV4cCI6MjA5MjcyMDQ3Mn0.qY9zREp-l_dpKJT1fnX6tiYKdsUwv0QNLezbUTkwTho',
-        MAX_RETRIES: 5,
-        RETRY_DELAY: 2000,
-        REQUEST_TIMEOUT: 15000
-    };
+    <!-- DEBUG FENSTER (Drücke 'D' zum Öffnen) -->
+    <div id="debug"></div>
 
-    // ===== STATE =====
-    let supabase = null;
-    let currentUser = null;
-    let userRole = 'guest';
-    let isLoginMode = true;
-    let connectionAttempts = 0;
-    let isConnected = false;
-
-    // ===== EXTENSIVES LOGGING SYSTEM =====
-    const Logger = {
-        console: document.getElementById('debugConsole'),
+    <script>
+        // === KONFIGURATION ===
+        const SUPABASE_URL = 'https://yqgtlfbykubjizqghiat.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxZ3RsZmJ5a3Viaml6cWdoaWF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNDQ0NzIsImV4cCI6MjA5MjcyMDQ3Mn0.qY9zREp-l_dpKJT1fnX6tiYKdsUwv0QNLezbUTkwTho';
         
-        log(msg, type = 'info') {
-            const time = new Date().toLocaleTimeString('de-DE');
-            const entry = document.createElement('div');
-            entry.className = `log-entry log-${type}`;
-            entry.innerHTML = `[${time}] <strong>${type.toUpperCase()}</strong>: ${msg}`;
-            this.console.appendChild(entry);
-            this.console.scrollTop = this.console.scrollHeight;
-            
-            // Auch in Browser-Konsole
-            const consoleMethod = type === 'error' ? 'error' : type === 'warn' ? 'warn' : 'log';
-            console[consoleMethod](`[MC Power ${type.toUpperCase()}]`, msg);
-        },
+        // Supabase Client starten
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        info(msg) { this.log(msg, 'info'); },
-        success(msg) { this.log(msg, 'success'); },
-        warn(msg) { this.log(msg, 'warn'); },
-        error(msg) { this.log(msg, 'error'); },
-        
-        clear() {
-            this.console.innerHTML = '';
+        let isLoginMode = true;
+        let currentUser = null;
+
+        // === HILFSFUNKTIONEN ===
+        function log(msg) {
+            console.log(msg);
+            const debugBox = document.getElementById('debug');
+            debugBox.innerHTML += `<div>[LOG] ${msg}</div>`;
+            debugBox.scrollTop = debugBox.scrollHeight;
         }
-    };
 
-    // ===== FEHLERHANDLUNG =====
-    window.handleScriptError = function(scriptName) {
-        Logger.error(`❌ Script nicht geladen: ${scriptName}`);
-        showBanner(
-            `Das ${scriptName} Script konnte nicht geladen werden. Bitte Internetverbindung prüfen!`,
-            'error'
-        );
-    };
-
-    window.onerror = function(msg, url, line, col, error) {
-        Logger.error(`💥 Globaler Fehler: ${msg} (Zeile ${line})`);
-        return false;
-    };
-
-    // ===== BANNER SYSTEM =====
-    function showBanner(text, type = 'info', duration = 5000) {
-        const banner = document.getElementById('statusBanner');
-        const icon = document.getElementById('statusBannerIcon');
-        const textEl = document.getElementById('statusBannerText');
-        
-        const icons = {
-            error: '❌',
-            success: '✅',
-            warning: '⚠️',
-            info: 'ℹ️'
-        };
-        
-        banner.className = `status-banner ${type} visible`;
-        icon.textContent = icons[type] || icons.info;
-        textEl.textContent = text;
-        
-        if(duration > 0) {
-            setTimeout(() => {
-                banner.classList.remove('visible');
-            }, duration);
+        function showMsg(text, type) {
+            const box = document.getElementById('msgBox');
+            box.textContent = text;
+            box.className = 'status-msg ' + type;
+            box.style.display = 'block';
+            setTimeout(() => { box.style.display = 'none'; }, 3000);
         }
-    }
 
-    // ===== CONNECTION STATUS =====
-    function updateConnectionStatus(status, text) {
-        const el = document.getElementById('connectionStatus');
-        const statuses = {
-            connected: { class: 'status-connected', text: '🟢 Verbunden' },
-            disconnected: { class: 'status-disconnected', text: '🔴 Getrennt' },
-            connecting: { class: 'status-connecting', text: '🟡 Verbinde...' }
-        };
-        
-        const s = statuses[status] || statuses.connecting;
-        el.className = `connection-status ${s.class}`;
-        el.innerHTML = `<span>${text || s.text}</span>`;
-    }
-
-    // ===== SUPABASE VERBINDUNG MIT RETRY =====
-    async function initSupabase() {
-        Logger.info('🚀 Initialisiere Supabase...');
-        updateConnectionStatus('connecting', 'Initialisiere Datenbank...');
-        
-        try {
-            // Prüfe ob Supabase geladen
-            if(typeof window.supabase === 'undefined') {
-                throw new Error('Supabase Library nicht verfügbar');
-            }
+        // === LEADERBOARD LADEN ===
+        async function loadLeaderboard() {
+            log('Lade Leaderboard...');
+            const tbody = document.getElementById('lbBody');
             
-            // Client erstellen
-            supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_KEY);
-            Logger.success('✅ Supabase Client erstellt');
-            
-            // Test-Verbindung
-            await testConnection();
-            
-            isConnected = true;
-            updateConnectionStatus('connected', 'Datenbank verbunden');
-            Logger.success('✅ Datenbank-Verbindung erfolgreich');
-            
-            return true;
-            
-        } catch(err) {
-            Logger.error(`❌ Initialisierung fehlgeschlagen: ${err.message}`);
-            connectionAttempts++;
-            
-            if(connectionAttempts < CONFIG.MAX_RETRIES) {
-                Logger.warn(`🔄 Versuch ${connectionAttempts}/${CONFIG.MAX_RETRIES} - Retry in ${CONFIG.RETRY_DELAY}ms...`);
-                updateConnectionStatus('connecting', `Verbindung fehlgeschlagen. Retry ${connectionAttempts}/${CONFIG.MAX_RETRIES}...`);
-                
-                await new Promise(resolve => setTimeout(resolve, CONFIG.RETRY_DELAY));
-                return initSupabase();
-            } else {
-                updateConnectionStatus('disconnected', 'Verbindung fehlgeschlagen');
-                showBanner(
-                    `Konnte keine Verbindung zur Datenbank herstellen nach ${CONFIG.MAX_RETRIES} Versuchen. ${err.message}`,
-                    'error',
-                    0
-                );
-                return false;
-            }
-        }
-    }
-
-    async function testConnection() {
-        Logger.info('🔍 Teste Datenbank-Verbindung...');
-        
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), CONFIG.REQUEST_TIMEOUT);
-            
-            // Versuche Tabellen zu prüfen
-            const {  tableCheck, error: checkErr } = await supabase
-                .from('players')
-                .select('count', { count: 'exact', head: true });
-            
-            clearTimeout(timeoutId);
-            
-            if(checkErr) {
-                if(checkErr.message.includes('does not exist')) {
-                    throw new Error('Tabellen existieren nicht! Bitte SQL-Skript in Supabase ausführen.');
-                }
-                throw checkErr;
-            }
-            
-            Logger.success('✅ Datenbank-Test erfolgreich');
-            return true;
-            
-        } catch(err) {
-            Logger.error(`❌ Datenbank-Test fehlgeschlagen: ${err.message}`);
-            throw err;
-        }
-    }
-
-    // ===== AUTH SYSTEM =====
-    function openAuth() {
-        document.getElementById('authModal').classList.add('active');
-        document.getElementById('authMsg').className = 'status-msg';
-        document.getElementById('inpUser').focus();
-        Logger.info('🔐 Auth Modal geöffnet');
-    }
-
-    function closeAuth() {
-        document.getElementById('authModal').classList.remove('active');
-        Logger.info('🔐 Auth Modal geschlossen');
-    }
-
-    function toggleAuthMode() {
-        isLoginMode = !isLoginMode;
-        const title = document.getElementById('authTitle');
-        const btn = document.getElementById('btnAuthSubmit');
-        const toggle = document.getElementById('authToggle');
-        
-        if(isLoginMode) {
-            title.textContent = '🔐 Anmelden';
-            btn.textContent = 'Anmelden';
-            toggle.innerHTML = 'Noch kein Account? <span style="color: var(--primary);">Jetzt registrieren</span>';
-        } else {
-            title.textContent = '📝 Registrieren';
-            btn.textContent = 'Registrieren';
-            toggle.innerHTML = 'Bereits Account? <span style="color: var(--primary);">Jetzt anmelden</span>';
-        }
-        
-        document.getElementById('authMsg').className = 'status-msg';
-        Logger.info(`🔄 Auth Mode gewechselt: ${isLoginMode ? 'LOGIN' : 'REGISTER'}`);
-    }
-
-    function showAuthMsg(text, type = 'error') {
-        const el = document.getElementById('authMsg');
-        el.className = `status-msg ${type} visible`;
-        el.textContent = text;
-        Logger[type === 'error' ? 'error' : 'success'](`Auth: ${text}`);
-    }
-
-    async function handleAuth() {
-        const username = document.getElementById('inpUser').value.trim();
-        const password = document.getElementById('inpPass').value;
-        
-        Logger.info(`🔐 Auth-Versuch: ${username || '(leer)'}`);
-        
-        // Validierung
-        if(!username) {
-            showAuthMsg('❌ Bitte Benutzername eingeben');
-            document.getElementById('inpUser').focus();
-            return;
-        }
-        
-        if(!password) {
-            showAuthMsg('❌ Bitte Passwort eingeben');
-            document.getElementById('inpPass').focus();
-            return;
-        }
-        
-        if(!isLoginMode && password.length < 6) {
-            showAuthMsg('❌ Passwort muss mindestens 6 Zeichen lang sein');
-            document.getElementById('inpPass').focus();
-            return;
-        }
-        
-        // UI updaten
-        const btn = document.getElementById('btnAuthSubmit');
-        const originalText = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = isLoginMode ? 'Anmelden...' : 'Registriere...';
-        
-        try {
-            const email = username.toLowerCase() + '@mcpower.local';
-            
-            if(isLoginMode) {
-                // LOGIN
-                Logger.info(`🔑 Login mit: ${email}`);
-                const {  authData, error: authErr } = await supabase.auth.signInWithPassword({ 
-                    email, 
-                    password 
-                });
-                
-                if(authErr) throw authErr;
-                
-                Logger.success(`✅ Login erfolgreich: ${authData.user.id}`);
-                await onAuthSuccess(authData.user);
-                showAuthMsg('✅ Erfolgreich eingeloggt!', 'success');
-                
-                setTimeout(() => {
-                    closeAuth();
-                    document.getElementById('inpPass').value = '';
-                }, 1000);
-                
-            } else {
-                // REGISTER
-                Logger.info(`📝 Registrierung mit: ${email}`);
-                const {  authData, error: authErr } = await supabase.auth.signUp({ 
-                    email, 
-                    password 
-                });
-                
-                if(authErr) throw authErr;
-                
-                if(authData.user) {
-                    Logger.info('👤 Erstelle Spieler-Eintrag...');
-                    const {  playerData, error: playerErr } = await supabase
-                        .from('players')
-                        .insert([{
-                            user_id: authData.user.id,
-                            username: username,
-                            display_name: username,
-                            role: 'player',
-                            region: 'DE'
-                        }])
-                        .select()
-                        .single();
-                    
-                    if(playerErr) {
-                        Logger.warn(`⚠️ Spieler-Eintrag fehlgeschlagen: ${playerErr.message}`);
-                        // Nicht kritisch, User ist trotzdem registriert
-                    } else {
-                        Logger.success(`✅ Spieler-Eintrag erstellt: ${playerData.id}`);
-                    }
-                }
-                
-                showAuthMsg('✅ Registrierung erfolgreich! Bitte einloggen.', 'success');
-                isLoginMode = true;
-                toggleAuthMode();
-            }
-            
-        } catch(err) {
-            Logger.error(`❌ Auth-Fehler: ${err.message}`);
-            let errorMsg = err.message;
-            
-            if(err.message.includes('Invalid login credentials')) {
-                errorMsg = '❌ Falscher Benutzername oder Passwort';
-            } else if(err.message.includes('User already registered')) {
-                errorMsg = '❌ Dieser Account existiert bereits';
-            } else if(err.message.includes('weak_password')) {
-                errorMsg = '❌ Passwort ist zu schwach';
-            }
-            
-            showAuthMsg(errorMsg);
-        } finally {
-            btn.disabled = false;
-            btn.textContent = originalText;
-        }
-    }
-
-    async function onAuthSuccess(user) {
-        Logger.success(`🎉 Auth Success: ${user.email}`);
-        currentUser = user;
-        
-        document.getElementById('btnAuth').classList.add('hidden');
-        document.getElementById('btnLogout').classList.remove('hidden');
-        
-        // Rolle laden
-        try {
-            Logger.info('👤 Lade Benutzerrolle...');
-            const {  playerData, error: roleErr } = await supabase
-                .from('players')
-                .select('role, username')
-                .eq('user_id', user.id)
-                .single();
-            
-            if(roleErr) {
-                Logger.warn(`⚠️ Rolle konnte nicht geladen werden: ${roleErr.message}`);
-                userRole = 'player';
-            } else {
-                userRole = playerData?.role || 'player';
-                Logger.success(`✅ Rolle: ${userRole.toUpperCase()}`);
-            }
-            
-            // Admin-Features für bestimmte Rollen
-            if(['owner', 'admin', 'co', 'tester'].includes(userRole)) {
-                Logger.info('🛡️ Admin-Zugriff aktiviert');
-                // Hier könnte Admin-Panel angezeigt werden
-            }
-            
-        } catch(err) {
-            Logger.error(`❌ Fehler beim Laden der Rolle: ${err.message}`);
-        }
-        
-        await loadLeaderboard();
-    }
-
-    async function doLogout() {
-        Logger.info('🚪 Logout...');
-        try {
-            await supabase.auth.signOut();
-            currentUser = null;
-            userRole = 'guest';
-            document.getElementById('btnAuth').classList.remove('hidden');
-            document.getElementById('btnLogout').classList.add('hidden');
-            showBanner('Erfolgreich abgemeldet', 'success');
-            await loadLeaderboard();
-        } catch(err) {
-            Logger.error(`❌ Logout-Fehler: ${err.message}`);
-            showBanner('Logout fehlgeschlagen', 'error');
-        }
-    }
-
-    async function checkSession() {
-        Logger.info('🔍 Prüfe Session...');
-        try {
-            const {  { session } } = await supabase.auth.getSession();
-            
-            if(session?.user) {
-                Logger.success(`✅ Aktive Session gefunden: ${session.user.email}`);
-                await onAuthSuccess(session.user);
-            } else {
-                Logger.info('ℹ️ Keine aktive Session');
-            }
-        } catch(err) {
-            Logger.error(`❌ Session-Check fehlgeschlagen: ${err.message}`);
-        }
-    }
-
-    // ===== LEADERBOARD SYSTEM =====
-    async function loadLeaderboard() {
-        Logger.info('📊 Lade Leaderboard...');
-        
-        const tbody = document.getElementById('lbBody');
-        const countEl = document.getElementById('playerCount');
-        
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="7">
-                    <div class="loading-container">
-                        <div class="spinner"></div>
-                        <div class="loading-text">Lade Leaderboard...</div>
-                        <div class="loading-sub">Bitte warten</div>
-                    </div>
-                </td>
-            </tr>
-        `;
-        
-        try {
-            const {  data, error } = await supabase
+            // Daten holen
+            const { data, error } = await supabase
                 .from('leaderboard')
                 .select(`
                     *,
-                    players (
-                        id,
-                        username,
-                        display_name,
-                        region,
-                        role,
-                        is_cheater,
-                        is_banned
-                    )
+                    players ( username, display_name, region, role, is_banned )
                 `)
-                .order('points', { ascending: false })
-                .limit(100);
+                .order('points', { ascending: false });
 
-            if(error) throw error;
-            
-            Logger.success(`✅ ${data?.length || 0} Einträge geladen`);
-            
-            if(!data || data.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="7">
-                            <div class="empty-state">
-                                <div class="empty-icon">📭</div>
-                                <div class="empty-text">Noch keine Spieler</div>
-                                <div class="empty-sub">Sei der Erste und registriere dich!</div>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-                countEl.textContent = '0 Spieler';
+            if (error) {
+                log('Fehler beim Laden: ' + error.message);
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; color:red;">Fehler: ${error.message}</td></tr>`;
                 return;
             }
 
-            // Gruppiere nach Spieler (zeige besten Eintrag pro Spieler)
-            const playerMap = new Map();
-            data.forEach(entry => {
-                const p = entry.players;
-                if(!p || p.is_banned) return;
-                
-                if(!playerMap.has(p.id)) {
-                    playerMap.set(p.id, { player: p, entries: [] });
-                }
-                playerMap.get(p.id).entries.push(entry);
-            });
+            tbody.innerHTML = ''; // Tabelle leeren
 
-            // Sortiere nach besten Punkten
-            const sorted = Array.from(playerMap.values()).sort((a, b) => {
-                const maxA = Math.max(...a.entries.map(e => e.points));
-                const maxB = Math.max(...b.entries.map(e => e.points));
-                return maxB - maxA;
-            });
+            if (!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Keine Spieler gefunden.</td></tr>';
+                return;
+            }
 
-            // Render
-            tbody.innerHTML = sorted.map((item, idx) => {
-                const p = item.player;
-                const bestEntry = item.entries.reduce((max, e) => e.points > max.points ? e : max);
-                const rankClass = idx < 3 ? `rank-${idx + 1}` : 'rank-other';
-                const tierClass = bestEntry.tier.includes('HP') ? 'hp' : 'lp';
-                const initials = (p.display_name || p.username).substring(0, 2).toUpperCase();
-                
-                return `
+            // Daten anzeigen
+            data.forEach((row, index) => {
+                if (row.players && row.players.is_banned) return; // Banned Spieler überspringen
+
+                const rank = index + 1;
+                let rankColor = '#64748b';
+                if (rank === 1) rankColor = 'gold';
+                if (rank === 2) rankColor = 'silver';
+                if (rank === 3) rankColor = '#cd7f32';
+
+                let tierClass = 'lp';
+                if (row.tier.includes('HP')) tierClass = 'hp';
+                if (row.tier === 'HP1') tierClass = 'hp1';
+
+                const rowHTML = `
                     <tr>
-                        <td><span class="rank ${rankClass}">${idx + 1}</span></td>
-                        <td>
-                            <div class="player-cell">
-                                <div class="player-avatar">${initials}</div>
-                                <div class="player-info">
-                                    <div class="player-name">${escapeHtml(p.display_name || p.username)}</div>
-                                    ${p.is_cheater ? '<div class="player-sub" style="color: var(--danger);">⚠️ Cheater</div>' : ''}
-                                </div>
-                            </div>
-                        </td>
-                        <td>${p.region || '-'}</td>
-                        <td>${bestEntry.gamemode}</td>
-                        <td><strong style="color: var(--primary);">${bestEntry.points}</strong></td>
-                        <td><span class="tier ${tierClass}">${bestEntry.tier}</span></td>
-                        <td><span class="role-badge role-${p.role}">${p.role}</span></td>
+                        <td style="color:${rankColor}; font-weight:bold;">#${rank}</td>
+                        <td style="font-weight:bold;">${row.players ? row.players.display_name : 'Unbekannt'}</td>
+                        <td>${row.players ? row.players.region : '-'}</td>
+                        <td>${row.gamemode}</td>
+                        <td style="color: #10b981;">${row.points}</td>
+                        <td><span class="tier-badge ${tierClass}">${row.tier}</span></td>
+                        <td style="font-size:12px; text-transform:uppercase;">${row.players ? row.players.role : '-'}</td>
                     </tr>
                 `;
-            }).join('');
-
-            countEl.textContent = `${sorted.length} Spieler`;
-            
-        } catch(err) {
-            Logger.error(`❌ Leaderboard-Fehler: ${err.message}`);
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="7">
-                        <div class="empty-state">
-                            <div class="empty-icon">❌</div>
-                            <div class="empty-text">Fehler beim Laden</div>
-                            <div class="empty-sub">${escapeHtml(err.message)}</div>
-                            <button class="btn btn-primary mt-2" onclick="loadLeaderboard()">🔄 Erneut versuchen</button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-            showBanner('Leaderboard konnte nicht geladen werden', 'error');
+                tbody.innerHTML += rowHTML;
+            });
+            log('Leaderboard geladen: ' + data.length + ' Einträge');
         }
-    }
 
-    // ===== HELPER =====
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    // ===== EVENT LISTENER =====
-    function bindEvents() {
-        Logger.info('📎 Binde Event-Listener...');
-        
-        // Auth
-        document.getElementById('btnAuth').addEventListener('click', openAuth);
-        document.getElementById('btnLogout').addEventListener('click', doLogout);
-        document.getElementById('authClose').addEventListener('click', closeAuth);
-        document.getElementById('authToggle').addEventListener('click', toggleAuthMode);
-        document.getElementById('btnAuthSubmit').addEventListener('click', handleAuth);
-        
-        // Enter-Taste in Auth-Inputs
-        document.getElementById('inpUser').addEventListener('keypress', (e) => {
-            if(e.key === 'Enter') document.getElementById('inpPass').focus();
-        });
-        document.getElementById('inpPass').addEventListener('keypress', (e) => {
-            if(e.key === 'Enter') handleAuth();
-        });
-        
-        // Modal schließen beim Klick außerhalb
-        document.getElementById('authModal').addEventListener('click', (e) => {
-            if(e.target.id === 'authModal') closeAuth();
-        });
-        
-        // Debug Toggle
-        document.getElementById('toggleDebug').addEventListener('click', () => {
-            document.getElementById('debugConsole').classList.toggle('visible');
-        });
-        
-        // Keyboard Shortcuts
-        document.addEventListener('keydown', (e) => {
-            // D für Debug
-            if(e.key.toLowerCase() === 'd' && e.target.tagName !== 'INPUT') {
-                e.preventDefault();
-                document.getElementById('debugConsole').classList.toggle('visible');
-            }
-            // ESC für Modal schließen
-            if(e.key === 'Escape') {
-                closeAuth();
-            }
-        });
-        
-        Logger.success('✅ Event-Listener gebunden');
-    }
-
-    // ===== INITIALIZIERUNG =====
-    async function init() {
-        Logger.info('🎮 MC Power Leaderboard startet...');
-        Logger.info(`📝 Konfiguration: ${CONFIG.SUPABASE_URL}`);
-        Logger.info(`🔄 Max Retries: ${CONFIG.MAX_RETRIES}`);
-        
-        try {
-            // Event Listener
-            bindEvents();
+        // === AUTH (LOGIN / REGISTER) ===
+        async function handleAuth() {
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
             
-            // Supabase verbinden
-            const connected = await initSupabase();
-            
-            if(connected) {
-                // Session prüfen
-                await checkSession();
-                
-                // Leaderboard laden
-                await loadLeaderboard();
-                
-                Logger.success('🎉 Initialisierung abgeschlossen!');
-                showBanner('Willkommen bei MC Power!', 'success', 3000);
+            if(!user || !pass) {
+                alert('Bitte Name und Passwort eingeben!');
+                return;
+            }
+
+            log(isLoginMode ? 'Versuche Login...' : 'Versuche Registrierung...');
+
+            // Supabase braucht Email, wir nehmen Usernamen@mcpower.local
+            const email = user.toLowerCase() + '@mcpower.local';
+
+            if (isLoginMode) {
+                // LOGIN
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: pass
+                });
+
+                if (error) {
+                    alert('Fehler: ' + error.message);
+                    log('Login Fehler: ' + error.message);
+                } else {
+                    log('Login erfolgreich!');
+                    currentUser = data.user;
+                    closeModal();
+                    checkSession();
+                    document.getElementById('btnLogin').style.display = 'none';
+                    document.getElementById('btnLogout').style.display = 'inline-block';
+                    showMsg('Erfolgreich eingeloggt!', 'success');
+                }
             } else {
-                Logger.error('❌ Initialisierung abgebrochen - keine Datenbank-Verbindung');
+                // REGISTER
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: pass
+                });
+
+                if (error) {
+                    alert('Fehler: ' + error.message);
+                } else {
+                    log('Registrierung erfolgreich. Erstelle Spieler-Profil...');
+                    // Profil in der "players" Tabelle anlegen
+                    const { error: profileError } = await supabase.from('players').insert([
+                        { user_id: data.user.id, username: user, display_name: user, role: 'player', region: 'DE' }
+                    ]);
+                    
+                    if(profileError) log('Profil Fehler: ' + profileError.message);
+                    
+                    alert('Registriert! Bitte jetzt einloggen.');
+                    isLoginMode = true;
+                    updateModal();
+                }
             }
-            
-        } catch(err) {
-            Logger.error(`💥 Fataler Initialisierungsfehler: ${err.message}`);
-            showBanner(
-                `Kritischer Fehler: ${err.message}. Bitte Seite neu laden (F5)`,
-                'error',
-                0
-            );
         }
-    }
 
-    // ===== START =====
-    if(document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+        async function checkSession() {
+            const { data } = await supabase.auth.getSession();
+            if (data.session) {
+                currentUser = data.session.user;
+                document.getElementById('btnLogin').style.display = 'none';
+                document.getElementById('btnLogout').style.display = 'inline-block';
+                log('Session erkannt.');
+            }
+        }
 
-    // ===== UNLOAD HANDLER =====
-    window.addEventListener('beforeunload', () => {
-        Logger.info('👋 Seite wird verlassen...');
-    });
-</script>
+        // === UI STEUERUNG ===
+        function updateModal() {
+            document.getElementById('modalTitle').textContent = isLoginMode ? 'Anmelden' : 'Registrieren';
+            document.getElementById('btnSubmit').textContent = isLoginMode ? 'Einloggen' : 'Registrieren';
+            document.getElementById('toggleMode').textContent = isLoginMode ? 'Noch keinen Account? Registrieren' : 'Bereits Account? Einloggen';
+        }
 
+        function closeModal() {
+            document.getElementById('loginModal').classList.remove('active');
+        }
+
+        // === EVENTS ===
+        document.getElementById('btnLogin').onclick = () => {
+            document.getElementById('loginModal').classList.add('active');
+        };
+        
+        document.getElementById('btnLogout').onclick = async () => {
+            await supabase.auth.signOut();
+            currentUser = null;
+            document.getElementById('btnLogin').style.display = 'inline-block';
+            document.getElementById('btnLogout').style.display = 'none';
+            log('Abgemeldet.');
+            location.reload();
+        };
+
+        document.getElementById('btnSubmit').onclick = handleAuth;
+        document.getElementById('toggleMode').onclick = () => {
+            isLoginMode = !isLoginMode;
+            updateModal();
+        };
+
+        // Debug Konsole mit 'D' Taste
+        document.addEventListener('keydown', (e) => {
+            if(e.key.toLowerCase() === 'd') {
+                const dbg = document.getElementById('debug');
+                dbg.style.display = dbg.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+
+        // START
+        window.onload = () => {
+            log('Seite geladen. Starte...');
+            checkSession();
+            loadLeaderboard();
+        };
+
+    </script>
 </body>
 </html>
