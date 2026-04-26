@@ -18,6 +18,7 @@
         .status.connecting{background:rgba(255,165,0,0.2);color:orange}.status.connected{background:rgba(0,255,136,0.2);color:var(--primary)}.status.error{background:rgba(255,68,68,0.2);color:var(--danger)}
         .gate{text-align:center;padding:4rem 2rem;background:var(--card);border-radius:12px;border:2px solid var(--border);margin-top:2rem}
         .gate h2{margin-bottom:1rem;color:var(--primary)}
+        .info-box{background:var(--card);padding:1rem;border-radius:8px;border:1px solid var(--border);margin-bottom:2rem;text-align:center;color:var(--muted)}
         .table-box{background:var(--card);border-radius:10px;overflow:hidden;border:2px solid var(--border);margin-top:2rem}
         table{width:100%;border-collapse:collapse}
         th{background:#1a2233;color:var(--primary);padding:1rem;text-align:left;text-transform:uppercase;font-size:0.8rem}
@@ -42,7 +43,7 @@
         #debug.show{display:block}#toggleDebug{position:fixed;bottom:10px;right:10px;background:var(--card);border:2px solid var(--border);color:var(--muted);padding:6px 10px;cursor:pointer;border-radius:6px;z-index:2001;font-size:11px}
         .loading{text-align:center;padding:2rem;color:var(--muted)}.hidden{display:none!important}
         
-        /* ADMIN PANEL STYLES */
+        /* ADMIN PANEL */
         .admin-panel{background:var(--card);border-radius:12px;padding:2rem;margin-top:2rem;border:2px solid var(--primary);display:none}
         .admin-panel.show{display:block}
         .admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
@@ -72,19 +73,27 @@
     </header>
     <div class="container">
         <div id="connStatus" class="status connecting">Verbinde...</div>
-        <div id="authGate" class="gate">
-            <h2>🔒 Zugang geschützt</h2>
-            <p style="color:var(--muted);margin-bottom:1.5rem">Melde dich an oder registriere dich, um das Leaderboard zu sehen.</p>
-            <button class="btn btn-primary" onclick="openAuth()">Jetzt anmelden</button>
+        
+        <!-- INFO BOX (nur wenn NICHT eingeloggt) -->
+        <div id="infoBox" class="info-box">
+            <strong>📢 Öffentliches Leaderboard</strong><br>
+            <small>Jeder kann das Leaderboard sehen. Melde dich an, um von einem Admin eingetragen zu werden!</small>
         </div>
 
-        <!-- LEADERBOARD -->
+        <!-- LEADERBOARD (IMMER SICHTBAR) -->
         <div id="lbContainer" class="table-box">
-            <h2 style="padding:1rem;border-bottom:1px solid var(--border)">🏆 Leaderboard</h2>
+            <h2 style="padding:1rem;border-bottom:1px solid var(--border)">🏆 Top 250 Spieler</h2>
             <table>
                 <thead><tr><th style="width:60px">Rang</th><th>Spieler</th><th>Region</th><th>Modus</th><th>Punkte</th><th>Tier</th><th>Rolle</th></tr></thead>
                 <tbody id="lbBody"><tr><td colspan="7" class="loading">Lade Daten...</td></tr></tbody>
             </table>
+        </div>
+
+        <!-- AUTH GATE (nur wenn NICHT eingeloggt - für Admin-Zugang) -->
+        <div id="authGate" class="gate" style="display:none">
+            <h2>🔐 Admin-Bereich</h2>
+            <p style="color:var(--muted);margin-bottom:1.5rem">Melde dich an, um Spieler ins Leaderboard aufzunehmen.</p>
+            <button class="btn btn-primary" onclick="openAuth()">Jetzt anmelden</button>
         </div>
 
         <!-- ADMIN PANEL (nur für admin/owner) -->
@@ -161,6 +170,7 @@
                 document.getElementById('connStatus').textContent='🟢 Verbunden';
                 log('✅ DB verbunden');
                 generateTierOptions();
+                await loadLeaderboard(); // Leaderboard SOFORT laden (öffentlich)
                 await checkSession();
             }catch(err){log('❌ '+err.message);document.getElementById('connStatus').className='status error';document.getElementById('connStatus').textContent='🔴 '+err.message}
         }
@@ -179,7 +189,7 @@
                 const email=u.toLowerCase()+'@mcpower.local';
                 if(loginMode){
                     const{data,error}=await sb.auth.signInWithPassword({email,password:p});if(error)throw error;if(!data?.user)throw new Error('Ungültige Antwort');
-                    currentUser=data.user;log('✅ Login');showAuthMsg('✅ Erfolgreich!',true);setTimeout(closeAuth,800);await loadUserRole();applyAuthState();await loadLeaderboard();await loadAllPlayers();
+                    currentUser=data.user;log('✅ Login');showAuthMsg('✅ Erfolgreich!',true);setTimeout(closeAuth,800);await loadUserRole();applyAuthState();await loadAllPlayers();
                 }else{
                     const{data,error}=await sb.auth.signUp({email,password:p});if(error)throw error;if(!data?.user)throw new Error('Registrierung fehlgeschlagen');
                     await sb.from('players').insert([{user_id:data.user.id,username:u,display_name:u,role:'player',region:'DE'}]);
@@ -191,26 +201,44 @@
         function applyAuthState(){
             document.getElementById('btnLogin').classList.toggle('hidden',!!currentUser);
             document.getElementById('btnLogout').classList.toggle('hidden',!currentUser);
-            document.getElementById('authGate').style.display=currentUser?'none':'block';
-            document.getElementById('lbContainer').style.display=currentUser?'block':'none';
+            // Info Box nur wenn NICHT eingeloggt
+            const infoBox=document.getElementById('infoBox');
+            if(infoBox)infoBox.style.display=currentUser?'none':'block';
+            // Auth Gate nur wenn eingeloggt (für Admin-Zugang)
+            const authGate=document.getElementById('authGate');
+            if(authGate)authGate.style.display=currentUser?'none':'block';
             // Admin Panel nur für admin/owner
             const adminPanel=document.getElementById('adminPanel');
             if(adminPanel)adminPanel.classList.toggle('show',['admin','owner','co'].includes(userRole)&&!!currentUser);
             if(['admin','owner','co'].includes(userRole)&&currentUser){document.getElementById('adminRole').textContent=userRole.toUpperCase();loadAllPlayers()}
         }
-        async function doLogout(){await sb.auth.signOut();currentUser=null;userRole='guest';applyAuthState();document.getElementById('lbBody').innerHTML='<tr><td colspan="7" class="loading">Bitte anmelden</td></tr>'}
-        async function checkSession(){const{data}=await sb.auth.getSession();if(data?.session){currentUser=data.session.user;await loadUserRole();applyAuthState();await loadLeaderboard();if(['admin','owner','co'].includes(userRole))await loadAllPlayers()}}
+        async function doLogout(){await sb.auth.signOut();currentUser=null;userRole='guest';applyAuthState()}
+        async function checkSession(){const{data}=await sb.auth.getSession();if(data?.session){currentUser=data.session.user;await loadUserRole();applyAuthState();await loadAllPlayers()}}
 
-        // ===== LEADERBOARD =====
+        // ===== LEADERBOARD (ÖFFENTLICH - 250 PLÄTZE) =====
         async function loadLeaderboard(){
-            if(!currentUser)return;log('📊 Lade LB...');const tb=document.getElementById('lbBody');tb.innerHTML='<tr><td colspan="7" class="loading">Lade...</td></tr>';
+            log('📊 Lade Leaderboard (öffentlich)...');
+            const tb=document.getElementById('lbBody');
+            tb.innerHTML='<tr><td colspan="7" class="loading">Lade Top 250...</td></tr>';
             try{
-                const{data,error}=await sb.from('leaderboard').select('*,players(username,display_name,region,role,is_banned)').order('points',{ascending:false}).limit(100);
-                if(error)throw error;tb.innerHTML='';if(!data?.length){tb.innerHTML='<tr><td colspan="7" class="loading">Keine Spieler</td></tr>';return}
-                const map=new Map();data.forEach(r=>{const p=r.players;if(!p||p.is_banned)return;if(!map.has(p.id))map.set(p.id,{p,entries:[]});map.get(p.id).entries.push(r)});
+                // LIMIT AUF 250 ERHÖHT!
+                const{data,error}=await sb.from('leaderboard').select('*,players(username,display_name,region,role,is_banned)').order('points',{ascending:false}).limit(250);
+                if(error)throw error;
+                tb.innerHTML='';
+                if(!data?.length){
+                    tb.innerHTML='<tr><td colspan="7" class="loading">Noch keine Spieler im Leaderboard</td></tr>';
+                    return;
+                }
+                const map=new Map();
+                data.forEach(r=>{const p=r.players;if(!p||p.is_banned)return;if(!map.has(p.id))map.set(p.id,{p,entries:[]});map.get(p.id).entries.push(r)});
                 const sorted=Array.from(map.values()).sort((a,b)=>Math.max(...b.entries.map(e=>e.points))-Math.max(...a.entries.map(e=>e.points)));
-                sorted.forEach((it,idx)=>{const p=it.p,best=it.entries.reduce((m,e)=>e.points>m.points?e:m);const rc=idx<1?'r1':idx<2?'r2':idx<3?'r3':'rother';const tc=best.tier.includes('HP')?'hp':'lp',tc1=best.tier==='HP1'?'hp1':'';tb.innerHTML+=`<tr><td><span class="rank ${rc}">${idx+1}</span></td><td><strong>${p.display_name||p.username}</strong></td><td>${p.region||'-'}</td><td>${best.gamemode}</td><td style="color:var(--primary)">${best.points}</td><td><span class="tier ${tc} ${tc1}">${best.tier}</span></td><td><span class="role role-${p.role}">${p.role}</span></td></tr>`});
-                log('✅ '+sorted.length+' Spieler');
+                sorted.forEach((it,idx)=>{
+                    const p=it.p,best=it.entries.reduce((m,e)=>e.points>m.points?e:m);
+                    const rc=idx<1?'r1':idx<2?'r2':idx<3?'r3':'rother';
+                    const tc=best.tier.includes('HP')?'hp':'lp',tc1=best.tier==='HP1'?'hp1':'';
+                    tb.innerHTML+=`<tr><td><span class="rank ${rc}">${idx+1}</span></td><td><strong>${p.display_name||p.username}</strong></td><td>${p.region||'-'}</td><td>${best.gamemode}</td><td style="color:var(--primary)">${best.points}</td><td><span class="tier ${tc} ${tc1}">${best.tier}</span></td><td><span class="role role-${p.role}">${p.role}</span></td></tr>`
+                });
+                log('✅ '+sorted.length+' Spieler geladen');
             }catch(err){log('❌ LB: '+err.message);tb.innerHTML='<tr><td colspan="7" class="loading" style="color:var(--danger)">Fehler: '+err.message+'</td></tr>'}
         }
 
@@ -225,10 +253,8 @@
             const name=document.getElementById('admName').value.trim(),region=document.getElementById('admRegion').value,mode=document.getElementById('admMode').value,points=parseInt(document.getElementById('admPoints').value)||0,tier=document.getElementById('admTier').value,role=document.getElementById('admRole').value,msg=document.getElementById('adminMsg');
             if(!name)return showAdminMsg('❌ Name erforderlich',false);
             try{
-                // Player suchen/erstellen
-                let{data:player}=await sb.from('players').select('id').eq('username',name).single();
-                if(!player){const{data:newP}=await sb.from('players').insert([{username:name,display_name:name,region,role}]).select().single();player=newP}else{await sb.from('players').update({region,role}).eq('id',player.id)}
-                // Leaderboard upsert
+                let{player}=await sb.from('players').select('id').eq('username',name).single();
+                if(!player){const{newP}=await sb.from('players').insert([{username:name,display_name:name,region,role}]).select().single();player=newP}else{await sb.from('players').update({region,role}).eq('id',player.id)}
                 await sb.from('leaderboard').upsert({player_id:player.id,gamemode:mode,points,tier},{onConflict:'player_id,gamemode'});
                 showAdminMsg('✅ Gespeichert!',true);document.getElementById('admName').value='';await loadLeaderboard();await loadAllPlayers();
             }catch(err){showAdminMsg('❌ '+err.message,false);log('❌ Save: '+err.message)}
@@ -246,8 +272,8 @@
             }catch(err){list.innerHTML='<div style="color:var(--danger)">Fehler</div>';log('❌ LoadPlayers: '+err.message)}
         }
         function filterPlayers(){const q=document.getElementById('admSearch').value.toLowerCase(),items=document.querySelectorAll('.player-item');items.forEach(it=>{const name=it.dataset.name;it.style.display=name.includes(q)?'flex':'none'})}
-        async function editPlayer(id,username){const newRole=prompt('Neue Rolle für '+username+':\nplayer, tester, admin, owner, cheater, banned', 'player');if(newRole&&['player','tester','admin','owner','cheater','banned'].includes(newRole)){await sb.from('players').update({role:newRole}).eq('id',id);showAdminMsg('✅ Rolle aktualisiert',true);await loadAllPlayers();await loadLeaderboard()}}
-        async function banPlayer(id,ban){await sb.from('players').update({is_banned:ban}).eq('id',id);showAdminMsg('✅ '+(ban?'gebanned':'entbannt'),true);await loadAllPlayers();await loadLeaderboard()}
+        async function editPlayer(id,username){const newRole=prompt('Neue Rolle für '+username+':\nplayer, tester, admin, owner, cheater, banned', 'player');if(newRole&&['player','tester','admin','owner','cheater','banned'].includes(newRole)){await sb.from('players').update({role:newRole}).eq('id',id);showAdminMsg('✅ Rolle aktualisiert',true);await loadAllPlayers()}}
+        async function banPlayer(id,ban){await sb.from('players').update({is_banned:ban}).eq('id',id);showAdminMsg('✅ '+(ban?'gebanned':'entbannt'),true);await loadAllPlayers()}
 
         // ===== EVENTS =====
         document.getElementById('btnLogin').onclick=openAuth;document.getElementById('btnLogout').onclick=doLogout;document.getElementById('btnAuth').onclick=handleAuth;document.getElementById('authToggle').onclick=toggleAuthMode;document.getElementById('authModal').onclick=e=>{if(e.target.id==='authModal')closeAuth()};document.getElementById('inpUser').onkeypress=e=>{if(e.key==='Enter')document.getElementById('inpPass').focus()};document.getElementById('inpPass').onkeypress=e=>{if(e.key==='Enter')handleAuth()};window.addEventListener('load',init);
