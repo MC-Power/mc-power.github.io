@@ -1019,54 +1019,115 @@
 
         // ===== LEADERBOARD =====
         async function loadLeaderboard() {
-            log('📊 Lade Leaderboard...');
-            const tb = document.getElementById('lbBody');
-            tb.innerHTML = '<tr><td colspan="7" class="loading"><div class="spinner"></div><div>Lade Top 250...</div></td></tr>';
-            try {
-                const {data, error} = await sb.from('leaderboard')
-                    .select('*, players(username, display_name, region, role, is_banned)')
-                    .order('points', {ascending: false})
-                    .limit(250);
-                if(error) throw error;
-                tb.innerHTML = '';
-                if(!data?.length) {
-                    tb.innerHTML = '<tr><td colspan="7" class="loading">Noch keine Spieler im Leaderboard</td></tr>';
-                    return;
-                }
-                const map = new Map();
-                data.forEach(r => {
-                    const p = r.players;
-                    if(!p || p.is_banned) return;
-                    if(!map.has(p.id)) map.set(p.id, {player: p, best: r});
-                    else {
-                        const current = map.get(p.id).best;
-                        if(r.points > current.points) map.set(p.id, {player: p, best: r});
-                    }
-                });
-                const sorted = Array.from(map.values()).sort((a, b) => b.best.points - a.best.points);
-                sorted.forEach((item, idx) => {
-                    const p = item.player;
-                    const best = item.best;
-                    const rc = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : 'rank-other';
-                    const tc = best.tier.includes('HP') ? 'tier-hp' : 'tier-lp';
-                    const tc1 = best.tier === 'HP1' ? 'tier-HP1' : '';
-                    tb.innerHTML += `<tr>
-                        <td><span class="rank ${rc}">${idx + 1}</span></td>
-                        <td class="player-name">${p.display_name || p.username}</td>
-                        <td>${p.region || '-'}</td>
-                        <td>${best.gamemode}</td>
-                        <td style="color: var(--primary); font-weight: 700">${best.points}</td>
-                        <td><span class="tier-badge ${tc} ${tc1}">${best.tier}</span></td>
-                        <td><span class="role-badge role-${p.role}">${p.role}</span></td>
-                    </tr>`;
-                });
-                log('✅ ' + sorted.length + ' Spieler geladen');
-            } catch(err) {
-                log('❌ LB: ' + err.message);
-                tb.innerHTML = '<tr><td colspan="7" class="loading" style="color: var(--danger)">Fehler: ' + err.message + '</td></tr>';
-            }
+    log('📊 Lade Leaderboard...');
+    const tb = document.getElementById('lbBody');
+    tb.innerHTML = '<tr><td colspan="7" class="loading"><div class="spinner"></div><div>Lade Top 250...</div></td></tr>';
+    
+    try {
+        // 1. Rohdaten laden
+        log('🔄 Sende Anfrage an Supabase...');
+        const {data, error, count} = await sb
+            .from('leaderboard')
+            .select(`
+                *,
+                players (
+                    username,
+                    display_name,
+                    region,
+                    role,
+                    is_banned
+                )
+            `, {count: 'exact'})
+            .order('points', {ascending: false})
+            .limit(250);
+        
+        if(error) {
+            log('❌ Supabase Fehler: ' + error.message);
+            throw error;
         }
-
+        
+        log('✅ ' + data.length + ' Roh-Einträge geladen');
+        log('📊 Player-Daten verfügbar: ' + (data[0]?.players ? 'JA' : 'NEIN'));
+        
+        if(!data || data.length === 0) {
+            tb.innerHTML = '<tr><td colspan="7" class="loading">Noch keine Spieler im Leaderboard</td></tr>';
+            return;
+        }
+        
+        // 2. Prüfe ob players-Daten da sind
+        let validCount = 0;
+        let bannedCount = 0;
+        let nullPlayerCount = 0;
+        
+        data.forEach((r, idx) => {
+            if(!r.players) {
+                nullPlayerCount++;
+                log('⚠️ Eintrag ' + idx + ': Keine Player-Daten (player_id: ' + r.player_id + ')');
+                return;
+            }
+            if(r.players.is_banned) {
+                bannedCount++;
+                return;
+            }
+            validCount++;
+        });
+        
+        log('✅ Valide Einträge: ' + validCount);
+        log('⚠️ Gebannt: ' + bannedCount);
+        log('⚠️ Ohne Player-Daten: ' + nullPlayerCount);
+        
+        // 3. Gruppiere nach Spieler (bestes Ergebnis pro User)
+        const map = new Map();
+        data.forEach(r => {
+            const p = r.players;
+            if(!p || p.is_banned) return;
+            
+            if(!map.has(p.id)) {
+                map.set(p.id, {player: p, best: r});
+            } else {
+                const current = map.get(p.id).best;
+                if(r.points > current.points) {
+                    map.set(p.id, {player: p, best: r});
+                }
+            }
+        });
+        
+        log('🎯 Einzigartige Spieler: ' + map.size);
+        
+        // 4. Sortieren
+        const sorted = Array.from(map.values()).sort((a, b) => b.best.points - a.best.points);
+        
+        // 5. Render
+        if(sorted.length === 0) {
+            tb.innerHTML = '<tr><td colspan="7" class="loading">Keine aktiven Spieler</td></tr>';
+            return;
+        }
+        
+        tb.innerHTML = sorted.map((item, idx) => {
+            const p = item.player;
+            const best = item.best;
+            const rc = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : 'rank-other';
+            const tc = best.tier.includes('HP') ? 'tier-hp' : 'tier-lp';
+            const tc1 = best.tier === 'HP1' ? 'tier-HP1' : '';
+            
+            return `<tr>
+                <td><span class="rank ${rc}">${idx + 1}</span></td>
+                <td class="player-name">${p.display_name || p.username}</td>
+                <td>${p.region || '-'}</td>
+                <td>${best.gamemode}</td>
+                <td style="color: var(--primary); font-weight: 700">${best.points}</td>
+                <td><span class="tier-badge ${tc} ${tc1}">${best.tier}</span></td>
+                <td><span class="role-badge role-${p.role}">${p.role}</span></td>
+            </tr>`;
+        }).join('');
+        
+        log('✅ Leaderboard gerendert: ' + sorted.length + ' Spieler');
+        
+    } catch(err) {
+        log('❌ LB Fehler: ' + err.message);
+        tb.innerHTML = '<tr><td colspan="7" class="loading" style="color: var(--danger)">Fehler: ' + err.message + '</td></tr>';
+    }
+}
         // ===== ADMIN =====
         function generateTierOptions() {
             const sel = document.getElementById('admTier');
